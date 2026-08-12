@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@theme {
+  --font-display: 'Oswald', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --color-background: #050505;
+  --color-foreground: #FFFFFF;
+  --color-primary: #FFFFFF;
+  --color-primary-foreground: #050505;
+  --color-muted: #181818;
+  --color-muted-foreground: #A3A3A3;
+  --color-border: #181818;
+
+  --color-yunique-black: #050505;
+  --color-yunique-offblack: #0B0B0B;
+  --color-yunique-white: #FFFFFF;
+  --color-yunique-offwhite: #F2F2F0;
+  --color-yunique-lightgray: #A3A3A3;
+  --color-yunique-darkgray: #181818;
+}
+
+@layer base {
+  :root {
+    --background: #050505;
+    --foreground: #FFFFFF;
+    --border: #181818;
+  }
+  
+  html, body {
+    @apply bg-background text-foreground font-sans antialiased;
+    cursor: none; /* Hide default cursor for custom cursor */
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight uppercase;
+  }
+  
+  ::selection {
+    background: #FFFFFF;
+    color: #050505;
+  }
+  
+  /* Hide scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050505; 
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #181818; 
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333; 
+  }
+}
