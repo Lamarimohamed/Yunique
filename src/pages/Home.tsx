@@ -16,16 +16,25 @@ export default function Home() {
       <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-[#050505]">
         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=2832&auto=format&fit=crop')] bg-cover bg-center mix-blend-screen grayscale" />
 
-        <div className="relative z-10 text-center max-w-[1440px] px-6 flex flex-col items-center">
-          <motion.div
-            className="w-48 h-48 md:w-64 md:h-64 mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
-          >
-            <LogoIntroSvg />
-          </motion.div>
+        {/* Animated Centered Logo with Disappear/Reappear Loop */}
+        <motion.div
+          className="absolute w-[450px] h-[450px] md:w-[700px] md:h-[700px] z-5 flex items-center justify-center"
+          animate={{ 
+            opacity: [0, 0.25, 0.25, 0, 0, 0.25],
+            scale: [0.6, 1, 1, 1, 0.6, 1],
+            y: [30, 0, 0, 0, 30, 0]
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            times: [0, 0.15, 0.5, 0.666, 0.85, 1],
+            ease: "easeOut",
+          }}
+        >
+          <LogoIntroSvg />
+        </motion.div>
 
+        <div className="relative z-10 text-center max-w-[1440px] px-6 flex flex-col items-center">
           <motion.h1
             className="text-6xl md:text-[120px] font-display tracking-tighter uppercase leading-[0.85] mb-8"
             initial={{ opacity: 0, y: 50 }}
