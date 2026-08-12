@@ -42,7 +42,9 @@ export default function Navbar() {
 
       <motion.nav
         className={`fixed top-6 w-full z-40 transition-colors duration-500 ${
-          scrolled || mobileMenuOpen
+          location.pathname.includes("/shop")
+            ? "bg-white/95 backdrop-blur-md border-b border-[#E5E5E5]"
+            : scrolled || mobileMenuOpen
             ? "bg-[#050505]/95 backdrop-blur-md border-b border-[#181818]"
             : "bg-transparent"
         }`}
@@ -56,64 +58,102 @@ export default function Navbar() {
             <Link
               to="/"
               aria-label="YUNIQUE Home"
-              className="text-2xl font-display tracking-widest uppercase text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className={`text-2xl font-display tracking-widest uppercase focus-visible:outline-none focus-visible:ring-2 ${
+                location.pathname.includes("/shop")
+                  ? "text-black focus-visible:ring-black"
+                  : "text-white focus-visible:ring-white"
+              }`}
             >
               YUNIQUE
             </Link>
           </div>
 
-          <div className="hidden md:flex w-1/3 justify-center space-x-8 text-xs font-display tracking-[0.1em] text-gray-400">
+          <div className={`hidden md:flex w-1/3 justify-center space-x-8 text-xs font-display tracking-[0.1em] ${
+            location.pathname.includes("/shop")
+              ? "text-gray-600"
+              : "text-gray-400"
+          }`}>
             <Link
               to="/shop"
-              className={`hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white ${
-                location.pathname.includes("/shop") ? "text-white" : ""
+              className={`transition-colors focus-visible:outline-none ${
+                location.pathname.includes("/shop")
+                  ? "text-black focus-visible:ring-1 focus-visible:ring-black"
+                  : "hover:text-white focus-visible:ring-1 focus-visible:ring-white"
               }`}
             >
               Shop
             </Link>
             <Link
               to="/drop"
-              className="hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className={`transition-colors focus-visible:outline-none ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-black focus-visible:ring-1 focus-visible:ring-black"
+                  : "hover:text-white focus-visible:ring-1 focus-visible:ring-white"
+              }`}
             >
               New Drop
             </Link>
             <Link
               to="/collections"
-              className="hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className={`transition-colors focus-visible:outline-none ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-black focus-visible:ring-1 focus-visible:ring-black"
+                  : "hover:text-white focus-visible:ring-1 focus-visible:ring-white"
+              }`}
             >
               Collections
             </Link>
             <Link
               to="/about"
-              className={`hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white ${
-                location.pathname.includes("/about") ? "text-white" : ""
-              }`}
+              className={`transition-colors focus-visible:outline-none ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-black focus-visible:ring-1 focus-visible:ring-black"
+                  : "hover:text-white focus-visible:ring-1 focus-visible:ring-white"
+              } ${location.pathname.includes("/about") ? location.pathname.includes("/shop") ? "text-black" : "text-white" : ""}`}
             >
               About
             </Link>
           </div>
 
-          <div className="flex-1 md:w-1/3 flex justify-end space-x-4 md:space-x-6 text-white items-center">
+          <div className={`flex-1 md:w-1/3 flex justify-end space-x-4 md:space-x-6 items-center transition-colors ${
+            location.pathname.includes("/shop") ? "text-black" : "text-white"
+          }`}>
             <button
               aria-label="Search"
-              className="hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white hidden md:block"
+              className={`transition-colors focus-visible:outline-none focus-visible:ring-1 hidden md:block ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-gray-600 focus-visible:ring-black"
+                  : "hover:text-gray-400 focus-visible:ring-white"
+              }`}
             >
               <Search size={18} strokeWidth={1.5} />
             </button>
             <button
               aria-label="User Account"
-              className="hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white hidden md:block"
+              className={`transition-colors focus-visible:outline-none focus-visible:ring-1 hidden md:block ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-gray-600 focus-visible:ring-black"
+                  : "hover:text-gray-400 focus-visible:ring-white"
+              }`}
             >
               <User size={18} strokeWidth={1.5} />
             </button>
             <button
               aria-label="Shopping Bag"
-              className="hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className={`transition-colors focus-visible:outline-none focus-visible:ring-1 ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-gray-600 focus-visible:ring-black"
+                  : "hover:text-gray-400 focus-visible:ring-white"
+              }`}
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
             </button>
             <button
-              className="md:hidden hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className={`md:hidden transition-colors focus-visible:outline-none focus-visible:ring-1 ${
+                location.pathname.includes("/shop")
+                  ? "hover:text-gray-600 focus-visible:ring-black"
+                  : "hover:text-gray-400 focus-visible:ring-white"
+              }`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
             >
@@ -134,14 +174,24 @@ export default function Navbar() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="md:hidden bg-[#050505] border-b border-[#181818] overflow-hidden"
+              className={`md:hidden border-b overflow-hidden ${
+                location.pathname.includes("/shop")
+                  ? "bg-white border-[#E5E5E5]"
+                  : "bg-[#050505] border-[#181818]"
+              }`}
             >
-              <div className="px-6 py-6 flex flex-col space-y-6 text-sm font-display tracking-[0.1em] text-gray-300">
+              <div className={`px-6 py-6 flex flex-col space-y-6 text-sm font-display tracking-[0.1em] ${
+                location.pathname.includes("/shop")
+                  ? "text-gray-600"
+                  : "text-gray-300"
+              }`}>
                 <Link
                   to="/shop"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`hover:text-white transition-colors ${
-                    location.pathname.includes("/shop") ? "text-white" : ""
+                  className={`transition-colors ${
+                    location.pathname.includes("/shop")
+                      ? "text-black"
+                      : "text-gray-300 hover:text-white"
                   }`}
                 >
                   Shop
@@ -149,36 +199,64 @@ export default function Navbar() {
                 <Link
                   to="/drop"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-white transition-colors"
+                  className={`transition-colors ${
+                    location.pathname.includes("/shop")
+                      ? "hover:text-black"
+                      : "hover:text-white"
+                  }`}
                 >
                   New Drop
                 </Link>
                 <Link
                   to="/collections"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-white transition-colors"
+                  className={`transition-colors ${
+                    location.pathname.includes("/shop")
+                      ? "hover:text-black"
+                      : "hover:text-white"
+                  }`}
                 >
                   Collections
                 </Link>
                 <Link
                   to="/about"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`hover:text-white transition-colors ${
-                    location.pathname.includes("/about") ? "text-white" : ""
+                  className={`transition-colors ${
+                    location.pathname.includes("/shop")
+                      ? "hover:text-black"
+                      : "hover:text-white"
+                  } ${
+                    location.pathname.includes("/about")
+                      ? location.pathname.includes("/shop")
+                        ? "text-black"
+                        : "text-white"
+                      : ""
                   }`}
                 >
                   About
                 </Link>
-                <div className="pt-4 border-t border-[#181818] flex space-x-6">
+                <div className={`pt-4 border-t flex space-x-6 ${
+                  location.pathname.includes("/shop")
+                    ? "border-[#E5E5E5]"
+                    : "border-[#181818]"
+                }`}>
                   <button
                     aria-label="Search"
-                    className="hover:text-gray-400 transition-colors flex items-center space-x-2"
+                    className={`transition-colors flex items-center space-x-2 ${
+                      location.pathname.includes("/shop")
+                        ? "hover:text-gray-900"
+                        : "hover:text-gray-400"
+                    }`}
                   >
                     <Search size={16} strokeWidth={1.5} /> <span>SEARCH</span>
                   </button>
                   <button
                     aria-label="User Account"
-                    className="hover:text-gray-400 transition-colors flex items-center space-x-2"
+                    className={`transition-colors flex items-center space-x-2 ${
+                      location.pathname.includes("/shop")
+                        ? "hover:text-gray-900"
+                        : "hover:text-gray-400"
+                    }`}
                   >
                     <User size={16} strokeWidth={1.5} /> <span>ACCOUNT</span>
                   </button>
