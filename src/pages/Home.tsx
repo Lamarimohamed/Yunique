@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion"
 import { useRef } from "react"
 import { Link } from "react-router"
-import logoSvg from "@/imports/WhatsApp-Image-2026-08-09-at-16.47.42.svg"
+import { LogoIntroSvg } from "@/components/ui/LogoIntroSvg"
 
 export default function Home() {
   const containerRef = useRef(null)
@@ -17,14 +17,14 @@ export default function Home() {
         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=2832&auto=format&fit=crop')] bg-cover bg-center mix-blend-screen grayscale" />
 
         <div className="relative z-10 text-center max-w-[1440px] px-6 flex flex-col items-center">
-          <motion.img
-            src={logoSvg}
-            alt="YUNIQUE Logo"
-            className="w-48 h-48 md:w-64 md:h-64 object-contain mb-8 opacity-100 invert"
+          <motion.div
+            className="w-48 h-48 md:w-64 md:h-64 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
-          />
+          >
+            <LogoIntroSvg />
+          </motion.div>
 
           <motion.h1
             className="text-6xl md:text-[120px] font-display tracking-tighter uppercase leading-[0.85] mb-8"
@@ -32,7 +32,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
           >
-            WEAR YOUR <br />
+            WEAR UR <br />
             IDENTITY.
           </motion.h1>
 

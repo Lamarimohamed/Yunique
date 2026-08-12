@@ -48,6 +48,23 @@
     background: #FFFFFF;
     color: #050505;
   }
+
+  /* SVG Logo Styling */
+  svg.mark .p-top,
+  svg.mark .p-bottom,
+  svg.mark .p-letter {
+    fill: white;
+    stroke: none;
+  }
+
+  @keyframes drawPath {
+    from {
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
   
   /* Hide scrollbar */
   ::-webkit-scrollbar {

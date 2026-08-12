@@ -4,7 +4,16 @@ export function LogoIntroSvg() {
       className="mark"
       viewBox="30 310 1380 780"
       xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+      preserveAspectRatio="xMidYMid meet"
     >
+      <defs>
+        <style>{`
+          .mark path { fill: white; }
+          .mark .p-top, .mark .p-bottom, .mark .p-letter { fill: white; }
+        `}</style>
+      </defs>
       <path
         className="p-top"
         style={{ animationDelay: "0ms" }}
