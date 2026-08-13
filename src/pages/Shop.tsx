@@ -12,15 +12,15 @@ export default function Shop() {
   const isCollectionsRoute = location.pathname.includes("/collections")
 
   let pageTitle = "SHOP"
-  let displayProducts = products
+  let displayProducts = products.filter(p => !p.isDraft)
 
   if (isDropRoute) {
     pageTitle = "NEW DROP"
-    displayProducts = products.filter(p => p.isNew)
+    displayProducts = displayProducts.filter(p => p.isNew)
   } else if (isCollectionsRoute) {
     pageTitle = "COLLECTIONS"
     // Show products that are part of any collection
-    displayProducts = products.filter(p => p.collection)
+    displayProducts = displayProducts.filter(p => p.collection)
   }
 
   const filters = [

@@ -9,6 +9,7 @@ export type Product = {
   sizes: string[]
   isNew?: boolean
   collection?: string
+  isDraft?: boolean
 }
 
 export type Order = {

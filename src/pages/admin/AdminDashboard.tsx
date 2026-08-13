@@ -163,7 +163,8 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-4 text-sm font-semibold uppercase tracking-wider">
                         {product.name}
-                        {product.isNew && <span className="ml-2 inline-block bg-black text-white text-[8px] px-1.5 py-0.5 align-middle">NEW</span>}
+                        {product.isDraft && <span className="ml-2 inline-block bg-yellow-400 text-yellow-900 text-[8px] px-1.5 py-0.5 align-middle font-bold">DRAFT</span>}
+                        {product.isNew && !product.isDraft && <span className="ml-2 inline-block bg-black text-white text-[8px] px-1.5 py-0.5 align-middle">NEW</span>}
                         {product.collection && <span className="block mt-1 text-[10px] text-gray-500 font-sans tracking-widest">{product.collection}</span>}
                       </td>
                       <td className="p-4 text-sm font-sans tracking-widest">{product.price.toLocaleString()} DZD</td>

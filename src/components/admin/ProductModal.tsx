@@ -18,7 +18,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
     description: "",
     sizes: "S, M, L",
     isNew: false,
-    collection: ""
+    collection: "",
+    isDraft: false
   })
 
   useEffect(() => {
@@ -30,7 +31,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         description: product.description,
         sizes: product.sizes.join(", "),
         isNew: product.isNew || false,
-        collection: product.collection || ""
+        collection: product.collection || "",
+        isDraft: product.isDraft || false
       })
     } else {
       setFormData({
@@ -40,10 +42,22 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         description: "",
         sizes: "S, M, L",
         isNew: false,
-        collection: ""
+        collection: "",
+        isDraft: false
       })
     }
   }, [product, isOpen])
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result as string }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +68,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
       description: formData.description,
       sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
       isNew: formData.isNew,
-      collection: formData.collection
+      collection: formData.collection,
+      isDraft: formData.isDraft
     })
     onClose()
   }
@@ -113,15 +128,26 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
             </div>
             <div>
               <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Image URL
+                Image (Upload or URL)
               </label>
-              <input
-                required
-                type="url"
-                value={formData.image}
-                onChange={e => setFormData({ ...formData, image: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={formData.image}
+                  onChange={e => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                  className="flex-1 p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
+                />
+                <label className="bg-[#F9F9F9] border border-[#E5E5E5] px-4 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors text-xs font-semibold tracking-widest uppercase">
+                  Upload
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </div>
+              {formData.image && (
+                <div className="mt-3 w-20 h-24 border border-[#E5E5E5] relative">
+                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
@@ -170,12 +196,31 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
                 Mark as "New Drop"
               </label>
             </div>
-            <button
-              type="submit"
-              className="w-full py-4 bg-black text-white text-sm font-sans font-semibold tracking-[0.2em] uppercase hover:bg-gray-800 transition-colors mt-6"
-            >
-              {product ? "Save Changes" : "Create Product"}
-            </button>
+            <div className="flex flex-col gap-3 mt-6 pt-4 border-t border-[#E5E5E5]">
+              <button
+                type="submit"
+                onClick={() => setFormData(prev => ({ ...prev, isDraft: false }))}
+                className="w-full py-4 bg-black text-white text-sm font-sans font-semibold tracking-[0.2em] uppercase hover:bg-gray-800 transition-colors"
+              >
+                {product && !product.isDraft ? "Save Changes" : "Publish Product"}
+              </button>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  onClick={() => setFormData(prev => ({ ...prev, isDraft: true }))}
+                  className="flex-1 py-3 bg-white border border-[#E5E5E5] text-black text-xs font-sans font-semibold tracking-[0.2em] uppercase hover:border-black transition-colors"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-3 bg-[#F9F9F9] border border-[#E5E5E5] text-red-600 text-xs font-sans font-semibold tracking-[0.2em] uppercase hover:border-red-600 transition-colors"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
           </form>
         </motion.div>
       </motion.div>
