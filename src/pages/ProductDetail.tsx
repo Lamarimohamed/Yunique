@@ -1,15 +1,26 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useCart } from "../context/CartContext"
 
 export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
+  const { addToCart, openCart } = useCart()
 
   const sizes = ["XS", "S", "M", "L", "XL"]
 
   const handleAdd = () => {
     if (!selectedSize) return
+    addToCart({
+      id: "1", // Hardcoded for now since there's no dynamic fetching
+      name: "YUNIQUE OVERSIZED TEE",
+      price: 12000,
+      size: selectedSize,
+      quantity: 1,
+      image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop"
+    })
     setAdded(true)
+    openCart()
     setTimeout(() => setAdded(false), 2000)
   }
 
