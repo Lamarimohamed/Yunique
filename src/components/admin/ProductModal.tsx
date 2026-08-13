@@ -16,11 +16,22 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
     price: "",
     image: "",
     description: "",
-    sizes: "S, M, L",
+    sizes: ["S", "M", "L"],
     isNew: false,
     collection: "",
     isDraft: false
   })
+
+  const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"]
+
+  const toggleSize = (size: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size]
+    }))
+  }
 
   useEffect(() => {
     if (product) {
@@ -29,7 +40,7 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         price: product.price.toString(),
         image: product.image,
         description: product.description,
-        sizes: product.sizes.join(", "),
+        sizes: product.sizes,
         isNew: product.isNew || false,
         collection: product.collection || "",
         isDraft: product.isDraft || false
@@ -40,7 +51,7 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         price: "",
         image: "",
         description: "",
-        sizes: "S, M, L",
+        sizes: ["S", "M", "L"],
         isNew: false,
         collection: "",
         isDraft: false
@@ -66,7 +77,7 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
       price: parseInt(formData.price) || 0,
       image: formData.image,
       description: formData.description,
-      sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
+      sizes: formData.sizes,
       isNew: formData.isNew,
       collection: formData.collection,
       isDraft: formData.isDraft
@@ -88,7 +99,7 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white w-full max-w-lg p-6 border border-[#E5E5E5] relative"
+          className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 md:p-8 border border-[#E5E5E5] relative shadow-2xl"
         >
           <button
             onClick={onClose}
@@ -101,30 +112,32 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
             {product ? "Edit Product" : "Add Product"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Product Name
-              </label>
-              <input
-                required
-                type="text"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Price (DZD)
-              </label>
-              <input
-                required
-                type="number"
-                value={formData.price}
-                onChange={e => setFormData({ ...formData, price: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                  Product Name
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                  Price (DZD)
+                </label>
+                <input
+                  required
+                  type="number"
+                  value={formData.price}
+                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  className="w-full p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
@@ -136,9 +149,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
                   value={formData.image}
                   onChange={e => setFormData({ ...formData, image: e.target.value })}
                   placeholder="https://..."
-                  className="flex-1 p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
+                  className="flex-1 p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
                 />
-                <label className="bg-[#F9F9F9] border border-[#E5E5E5] px-4 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors text-xs font-semibold tracking-widest uppercase">
+                <label className="bg-black text-white px-6 flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors text-xs font-semibold tracking-widest uppercase">
                   Upload
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 </label>
@@ -157,32 +170,44 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
                 required
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black min-h-[100px]"
+                className="w-full p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black min-h-[80px] transition-colors"
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Sizes (comma separated)
-              </label>
-              <input
-                required
-                type="text"
-                value={formData.sizes}
-                onChange={e => setFormData({ ...formData, sizes: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Collection Name (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.collection}
-                onChange={e => setFormData({ ...formData, collection: e.target.value })}
-                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
-                placeholder="e.g. Summer 2026"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                  Sizes Available
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABLE_SIZES.map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => toggleSize(size)}
+                      className={`min-w-[40px] px-2 py-2 text-xs font-semibold tracking-widest transition-colors border ${
+                        formData.sizes.includes(size)
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-500 border-[#E5E5E5] hover:border-black hover:text-black"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                  Collection Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.collection}
+                  onChange={e => setFormData({ ...formData, collection: e.target.value })}
+                  className="w-full p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
+                  placeholder="e.g. Summer 2026"
+                />
+              </div>
             </div>
             <div className="flex items-center gap-3 mt-2">
               <input
