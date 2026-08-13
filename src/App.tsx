@@ -8,6 +8,7 @@ import Shop from "./pages/Shop"
 import About from "./pages/About"
 import ProductDetail from "./pages/ProductDetail"
 import Checkout from "./pages/Checkout"
+import AdminDashboard from "./pages/admin/AdminDashboard"
 
 // Components
 import Navbar from "./components/layout/Navbar"
@@ -17,6 +18,7 @@ import PageTransition from "./components/ui/PageTransition"
 import { LogoIntroSvg } from "./components/ui/LogoIntroSvg"
 import CartDrawer from "./components/ui/CartDrawer"
 import { CartProvider } from "./context/CartContext"
+import { DataProvider } from "./context/DataContext"
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -30,40 +32,43 @@ export default function App() {
   }, [])
 
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <CustomCursor />
+    <DataProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <CustomCursor />
 
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <IntroSequence key="intro" />
-          ) : (
-            <motion.div
-              key="app"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Navbar />
-              <PageTransition>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/drop" element={<Shop />} />
-                  <Route path="/collections" element={<Shop />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="*" element={<Home />} />
-                </Routes>
-              </PageTransition>
-              <Footer />
-              <CartDrawer />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </BrowserRouter>
-    </CartProvider>
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <IntroSequence key="intro" />
+            ) : (
+              <motion.div
+                key="app"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Navbar />
+                <PageTransition>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/drop" element={<Shop />} />
+                    <Route path="/collections" element={<Shop />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="*" element={<Home />} />
+                  </Routes>
+                </PageTransition>
+                <Footer />
+                <CartDrawer />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </BrowserRouter>
+      </CartProvider>
+    </DataProvider>
   )
 }
 

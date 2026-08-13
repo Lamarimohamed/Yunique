@@ -1,14 +1,26 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "../context/CartContext"
+import { useData } from "../context/DataContext"
 import { Link } from "react-router"
 import { CreditCard, Truck, ChevronLeft } from "lucide-react"
 
 export default function Checkout() {
-  const { items, cartCount } = useCart()
+  const { items, cartCount, clearCart } = useCart()
+  const { addOrder } = useData()
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "cod">("stripe")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+
+  const [formData, setFormData] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    phone: ""
+  })
 
   const subtotal = items.reduce(
     (total, item) => total + item.price * item.quantity,
@@ -22,6 +34,15 @@ export default function Checkout() {
     setIsProcessing(true)
     // Mock processing delay
     setTimeout(() => {
+      addOrder({
+        customerName: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone,
+        address: `${formData.address}, ${formData.city} ${formData.postalCode}`,
+        items: items,
+        total: total
+      })
+      clearCart()
       setIsProcessing(false)
       setIsSuccess(true)
     }, 2000)
@@ -94,6 +115,8 @@ export default function Checkout() {
                   <input
                     type="email"
                     required
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                     placeholder="Enter your email"
                   />
@@ -114,6 +137,8 @@ export default function Checkout() {
                   <input
                     type="text"
                     required
+                    value={formData.firstName}
+                    onChange={e => setFormData({ ...formData, firstName: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>
@@ -124,6 +149,8 @@ export default function Checkout() {
                   <input
                     type="text"
                     required
+                    value={formData.lastName}
+                    onChange={e => setFormData({ ...formData, lastName: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>
@@ -134,6 +161,8 @@ export default function Checkout() {
                   <input
                     type="text"
                     required
+                    value={formData.address}
+                    onChange={e => setFormData({ ...formData, address: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>
@@ -144,6 +173,8 @@ export default function Checkout() {
                   <input
                     type="text"
                     required
+                    value={formData.city}
+                    onChange={e => setFormData({ ...formData, city: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>
@@ -154,6 +185,8 @@ export default function Checkout() {
                   <input
                     type="text"
                     required
+                    value={formData.postalCode}
+                    onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>
@@ -164,6 +197,8 @@ export default function Checkout() {
                   <input
                     type="tel"
                     required
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
                   />
                 </div>

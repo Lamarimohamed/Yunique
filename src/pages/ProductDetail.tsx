@@ -1,23 +1,40 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useCart } from "../context/CartContext"
+import { useData } from "../context/DataContext"
+import { useParams, Link } from "react-router"
 
 export default function ProductDetail() {
+  const { id } = useParams()
+  const { products } = useData()
+  const product = products.find(p => p.id === id) || products[0] // Fallback for safety
+
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
   const { addToCart, openCart } = useCart()
 
-  const sizes = ["XS", "S", "M", "L", "XL"]
+  if (!product) {
+    return (
+      <main className="min-h-screen flex items-center justify-center pt-24 text-black">
+        <div className="text-center">
+          <h1 className="text-2xl font-display tracking-widest uppercase mb-4">Product Not Found</h1>
+          <Link to="/shop" className="text-xs font-semibold tracking-widest uppercase hover:text-gray-500">Return to Shop</Link>
+        </div>
+      </main>
+    )
+  }
+
+  const sizes = product.sizes
 
   const handleAdd = () => {
     if (!selectedSize) return
     addToCart({
-      id: "1", // Hardcoded for now since there's no dynamic fetching
-      name: "YUNIQUE OVERSIZED TEE",
-      price: 12000,
+      id: product.id,
+      name: product.name,
+      price: product.price,
       size: selectedSize,
       quantity: 1,
-      image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop"
+      image: product.image
     })
     setAdded(true)
     openCart()
@@ -30,14 +47,14 @@ export default function ProductDetail() {
         {/* Left: Gallery */}
         <div className="w-full lg:w-2/3 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <img
-            src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop"
-            alt="YUNIQUE OVERSIZED TEE Front"
+            src={product.image}
+            alt={`${product.name} Front`}
             className="w-full h-[80vh] object-cover bg-[#F2F2F0]"
             data-cursor="explore"
           />
           <img
-            src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1287&auto=format&fit=crop"
-            alt="YUNIQUE OVERSIZED TEE Back"
+            src={product.image}
+            alt={`${product.name} Back`}
             className="w-full h-[80vh] object-cover bg-[#F2F2F0]"
             data-cursor="explore"
           />
@@ -51,10 +68,10 @@ export default function ProductDetail() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
           >
             <h1 className="text-3xl md:text-4xl font-display tracking-tighter uppercase mb-2 text-black">
-              YUNIQUE OVERSIZED TEE
+              {product.name}
             </h1>
             <p className="text-xl text-black font-sans tracking-widest mb-12 font-semibold">
-              12,000 DZD
+              {product.price.toLocaleString()} DZD
             </p>
 
             <div className="mb-8">
@@ -115,9 +132,7 @@ export default function ProductDetail() {
                   DESCRIPTION
                 </p>
                 <p className="normal-case">
-                  Heavyweight cotton jersey. Oversized boxy fit. Dropped
-                  shoulders. Signature fingerprint subtle hit on the back neck.
-                  Manufactured in Portugal.
+                  {product.description}
                 </p>
               </div>
               <div>
