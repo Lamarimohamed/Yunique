@@ -16,7 +16,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
     price: "",
     image: "",
     description: "",
-    sizes: "S, M, L"
+    sizes: "S, M, L",
+    isNew: false,
+    collection: ""
   })
 
   useEffect(() => {
@@ -26,7 +28,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         price: product.price.toString(),
         image: product.image,
         description: product.description,
-        sizes: product.sizes.join(", ")
+        sizes: product.sizes.join(", "),
+        isNew: product.isNew || false,
+        collection: product.collection || ""
       })
     } else {
       setFormData({
@@ -34,7 +38,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         price: "",
         image: "",
         description: "",
-        sizes: "S, M, L"
+        sizes: "S, M, L",
+        isNew: false,
+        collection: ""
       })
     }
   }, [product, isOpen])
@@ -46,7 +52,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
       price: parseInt(formData.price) || 0,
       image: formData.image,
       description: formData.description,
-      sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean)
+      sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
+      isNew: formData.isNew,
+      collection: formData.collection
     })
     onClose()
   }
@@ -137,6 +145,30 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
                 onChange={e => setFormData({ ...formData, sizes: e.target.value })}
                 className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
               />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                Collection Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.collection}
+                onChange={e => setFormData({ ...formData, collection: e.target.value })}
+                className="w-full p-3 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black"
+                placeholder="e.g. Summer 2026"
+              />
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <input
+                type="checkbox"
+                id="isNew"
+                checked={formData.isNew}
+                onChange={e => setFormData({ ...formData, isNew: e.target.checked })}
+                className="w-4 h-4 text-black border-gray-300 focus:ring-black accent-black"
+              />
+              <label htmlFor="isNew" className="text-xs font-semibold tracking-widest uppercase text-gray-700 cursor-pointer">
+                Mark as "New Drop"
+              </label>
             </div>
             <button
               type="submit"

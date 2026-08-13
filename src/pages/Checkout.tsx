@@ -320,7 +320,7 @@ export default function Checkout() {
                   : "bg-black text-white hover:bg-gray-800"
               }`}
             >
-              {isProcessing ? "Processing..." : `Pay ${total.toLocaleString()} DZD`}
+              {isProcessing ? "Processing..." : "PLACE ORDER"}
             </button>
           </form>
         </div>

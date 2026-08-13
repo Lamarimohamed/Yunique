@@ -7,6 +7,8 @@ export type Product = {
   image: string
   description: string
   sizes: string[]
+  isNew?: boolean
+  collection?: string
 }
 
 export type Order = {
@@ -38,7 +40,9 @@ const defaultProducts: Product[] = [
     price: 12000,
     image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop",
     description: "Heavyweight cotton jersey. Oversized boxy fit.",
-    sizes: ["XS", "S", "M", "L", "XL"]
+    sizes: ["XS", "S", "M", "L", "XL"],
+    isNew: true,
+    collection: "Core Essentials"
   },
   {
     id: "2",
@@ -46,7 +50,9 @@ const defaultProducts: Product[] = [
     price: 18500,
     image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1287&auto=format&fit=crop",
     description: "Premium fleece. Relaxed fit for everyday wear.",
-    sizes: ["S", "M", "L", "XL"]
+    sizes: ["S", "M", "L", "XL"],
+    isNew: false,
+    collection: "Core Essentials"
   }
 ]
 

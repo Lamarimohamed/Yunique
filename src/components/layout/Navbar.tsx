@@ -132,7 +132,8 @@ export default function Navbar() {
             >
               <Search size={18} strokeWidth={1.5} />
             </button>
-            <button
+            <Link
+              to="/admin"
               aria-label="User Account"
               className={`transition-colors focus-visible:outline-none focus-visible:ring-1 hidden md:block ${
                 isLightMode
@@ -141,7 +142,7 @@ export default function Navbar() {
               }`}
             >
               <User size={18} strokeWidth={1.5} />
-            </button>
+            </Link>
             <button
               aria-label="Shopping Bag"
               onClick={openCart}
@@ -260,7 +261,9 @@ export default function Navbar() {
                   >
                     <Search size={16} strokeWidth={1.5} /> <span>SEARCH</span>
                   </button>
-                  <button
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
                     aria-label="User Account"
                     className={`transition-colors flex items-center space-x-2 ${
                       isLightMode
@@ -269,7 +272,7 @@ export default function Navbar() {
                     }`}
                   >
                     <User size={16} strokeWidth={1.5} /> <span>ACCOUNT</span>
-                  </button>
+                  </Link>
                 </div>
               </div>
             </motion.div>

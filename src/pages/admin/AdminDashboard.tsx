@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { useData, Product } from "../../context/DataContext"
-import { Package, ShoppingBag, Plus, Edit2, Trash2 } from "lucide-react"
+import { useData, Product, Order } from "../../context/DataContext"
+import { Package, ShoppingBag, Plus, Edit2, Trash2, Download, TrendingUp, DollarSign } from "lucide-react"
 import ProductModal from "../../components/admin/ProductModal"
+import OrderModal from "../../components/admin/OrderModal"
 import { Link } from "react-router"
 
 export default function AdminDashboard() {
@@ -11,6 +12,14 @@ export default function AdminDashboard() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+
+  // Order Modal state
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+
+  const totalOrders = orders.length
+  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
+  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
 
   const openAddModal = () => {
     setEditingProduct(null)
@@ -30,6 +39,33 @@ export default function AdminDashboard() {
     }
   }
 
+  const exportOrdersToCSV = () => {
+    const headers = ["Order ID", "Date", "Customer Name", "Email", "Phone", "Address", "Total", "Status", "Items"]
+    const rows = orders.map(order => {
+      const itemsStr = order.items.map(i => `${i.name} (${i.quantity}x ${i.size})`).join(" | ")
+      return [
+        order.id,
+        new Date(order.date).toLocaleDateString(),
+        `"${order.customerName}"`,
+        order.email,
+        order.phone,
+        `"${order.address}"`,
+        order.total,
+        order.status,
+        `"${itemsStr}"`
+      ].join(",")
+    })
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", "yunique_orders.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12">
       <div className="max-w-[1440px] mx-auto px-6">
@@ -45,6 +81,31 @@ export default function AdminDashboard() {
           <Link to="/" className="text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500 transition-colors">
             Return to Store
           </Link>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 border border-[#E5E5E5] flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-1">Total Revenue</p>
+              <p className="text-2xl font-display tracking-widest">{totalRevenue.toLocaleString()} DZD</p>
+            </div>
+            <div className="bg-[#F9F9F9] p-3 rounded-full text-black"><DollarSign size={20} /></div>
+          </div>
+          <div className="bg-white p-6 border border-[#E5E5E5] flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-1">Total Orders</p>
+              <p className="text-2xl font-display tracking-widest">{totalOrders}</p>
+            </div>
+            <div className="bg-[#F9F9F9] p-3 rounded-full text-black"><ShoppingBag size={20} /></div>
+          </div>
+          <div className="bg-white p-6 border border-[#E5E5E5] flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-1">Avg. Order Value</p>
+              <p className="text-2xl font-display tracking-widest">{avgOrderValue.toLocaleString()} DZD</p>
+            </div>
+            <div className="bg-[#F9F9F9] p-3 rounded-full text-black"><TrendingUp size={20} /></div>
+          </div>
         </div>
 
         <div className="flex space-x-8 mb-8 border-b border-[#E5E5E5]">
@@ -100,7 +161,11 @@ export default function AdminDashboard() {
                       <td className="p-4">
                         <img src={product.image} alt={product.name} className="w-12 h-16 object-cover bg-[#F2F2F0]" />
                       </td>
-                      <td className="p-4 text-sm font-semibold uppercase tracking-wider">{product.name}</td>
+                      <td className="p-4 text-sm font-semibold uppercase tracking-wider">
+                        {product.name}
+                        {product.isNew && <span className="ml-2 inline-block bg-black text-white text-[8px] px-1.5 py-0.5 align-middle">NEW</span>}
+                        {product.collection && <span className="block mt-1 text-[10px] text-gray-500 font-sans tracking-widest">{product.collection}</span>}
+                      </td>
                       <td className="p-4 text-sm font-sans tracking-widest">{product.price.toLocaleString()} DZD</td>
                       <td className="p-4 text-xs font-sans text-gray-500">{product.sizes.join(", ")}</td>
                       <td className="p-4 text-right">
@@ -130,6 +195,14 @@ export default function AdminDashboard() {
 
         {activeTab === "orders" && (
           <div>
+            <div className="flex justify-end mb-6">
+              <button
+                onClick={exportOrdersToCSV}
+                className="flex items-center gap-2 bg-white border border-[#E5E5E5] text-black px-6 py-3 text-xs font-semibold tracking-widest uppercase hover:bg-[#F9F9F9] transition-colors"
+              >
+                <Download size={16} /> Export CSV
+              </button>
+            </div>
             <div className="bg-white border border-[#E5E5E5] overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -139,6 +212,7 @@ export default function AdminDashboard() {
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Date</th>
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Total</th>
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Status</th>
+                    <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,6 +240,17 @@ export default function AdminDashboard() {
                           <option value="Delivered">Delivered</option>
                         </select>
                       </td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setIsOrderModalOpen(true)
+                          }}
+                          className="text-xs font-semibold tracking-widest uppercase text-gray-500 hover:text-black underline underline-offset-4"
+                        >
+                          View Details
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {orders.length === 0 && (
@@ -187,6 +272,11 @@ export default function AdminDashboard() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveProduct}
         product={editingProduct}
+      />
+      <OrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        order={selectedOrder}
       />
     </div>
   )

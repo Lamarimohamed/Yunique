@@ -1,11 +1,27 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Link } from "react-router"
+import { Link, useLocation } from "react-router"
 import { useData } from "../context/DataContext"
 
 export default function Shop() {
   const [filter, setFilter] = useState("ALL")
   const { products } = useData()
+  const location = useLocation()
+
+  const isDropRoute = location.pathname.includes("/drop")
+  const isCollectionsRoute = location.pathname.includes("/collections")
+
+  let pageTitle = "SHOP"
+  let displayProducts = products
+
+  if (isDropRoute) {
+    pageTitle = "NEW DROP"
+    displayProducts = products.filter(p => p.isNew)
+  } else if (isCollectionsRoute) {
+    pageTitle = "COLLECTIONS"
+    // Show products that are part of any collection
+    displayProducts = products.filter(p => p.collection)
+  }
 
   const filters = [
     "ALL",
@@ -17,14 +33,14 @@ export default function Shop() {
   ]
 
   const filteredProducts =
-    filter === "ALL" ? products : products // We removed cat from product for simplicity, so always show all or implement cat later
+    filter === "ALL" ? displayProducts : displayProducts // We removed cat from product for simplicity, so always show all or implement cat later
 
   return (
     <main className="min-h-screen bg-white pt-32 pb-24 px-6 text-black">
       <div className="max-w-[1440px] mx-auto">
         <header className="mb-16 border-b border-[#E5E5E5] pb-8">
           <h1 className="text-5xl md:text-7xl font-display tracking-tighter uppercase mb-12">
-            SHOP
+            {pageTitle}
           </h1>
 
           <div
@@ -75,8 +91,11 @@ export default function Shop() {
                 </div>
                 <div className="flex justify-between items-start font-sans text-xs tracking-widest uppercase text-black">
                   <div>
-                    <h2 className="font-semibold mb-1">{p.name}</h2>
-                    <p className="text-gray-500">{"BLACK"}</p>
+                    <h2 className="font-semibold mb-1">
+                      {p.name}
+                      {p.isNew && <span className="ml-2 inline-block bg-black text-white text-[8px] px-1 py-0.5 align-middle">NEW</span>}
+                    </h2>
+                    <p className="text-gray-500">{p.collection || "ESSENTIALS"}</p>
                   </div>
                   <p className="font-semibold">{p.price.toLocaleString()} DZD</p>
                 </div>
