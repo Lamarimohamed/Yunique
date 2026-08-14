@@ -4,11 +4,19 @@ import { Package, ShoppingBag, Plus, Edit2, Trash2, Download, TrendingUp, Dollar
 import ProductModal from "../../components/admin/ProductModal"
 import OrderModal from "../../components/admin/OrderModal"
 import { Link } from "react-router"
+import { supabase } from "../../lib/supabase"
 
 export default function AdminDashboard() {
   const { products, orders, addProduct, updateProduct, deleteProduct, updateOrderStatus } = useData()
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products")
   
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -20,6 +28,27 @@ export default function AdminDashboard() {
   const totalOrders = orders.length
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoggingIn(true)
+    setLoginError("")
+    
+    // Check credentials against our new "admins" table
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single()
+
+    if (data) {
+      setIsAuthenticated(true)
+    } else {
+      setLoginError("Invalid username or password.")
+    }
+    setIsLoggingIn(false)
+  }
 
   const openAddModal = () => {
     setEditingProduct(null)
@@ -66,6 +95,73 @@ export default function AdminDashboard() {
     document.body.removeChild(link)
   }
 
+  // --- LOGIN SCREEN ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#F9F9F9] pt-24 flex items-center justify-center p-6">
+        <div className="bg-white p-10 max-w-md w-full border border-[#E5E5E5] shadow-sm">
+          <h1 className="text-2xl font-display tracking-widest uppercase mb-2 text-center text-black">
+            Admin Portal
+          </h1>
+          <p className="text-xs font-sans tracking-widest text-center text-gray-500 mb-8 uppercase">
+            Sign in to continue
+          </p>
+          
+          {loginError && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold tracking-widest text-center uppercase">
+              {loginError}
+            </div>
+          )}
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                Username
+              </label>
+              <input 
+                type="text" 
+                required
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                className="w-full p-4 bg-[#F9F9F9] border border-[#E5E5E5] text-sm text-black placeholder:text-gray-400 focus:outline-none focus:border-black transition-colors"
+                placeholder="Enter admin username"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                Password
+              </label>
+              <input 
+                type="password" 
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full p-4 bg-[#F9F9F9] border border-[#E5E5E5] text-sm text-black placeholder:text-gray-400 focus:outline-none focus:border-black transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={isLoggingIn}
+              className={`w-full py-4 text-xs font-semibold tracking-widest uppercase transition-colors ${
+                isLoggingIn ? "bg-gray-200 text-gray-500" : "bg-black text-white hover:bg-gray-800"
+              }`}
+            >
+              {isLoggingIn ? "Verifying..." : "Sign In"}
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <Link to="/" className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 hover:text-black transition-colors underline underline-offset-4">
+              Return to Store
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- DASHBOARD SCREEN ---
   return (
     <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12">
       <div className="max-w-[1440px] mx-auto px-6">
@@ -78,9 +174,12 @@ export default function AdminDashboard() {
               Manage your products and orders
             </p>
           </div>
-          <Link to="/" className="text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500 transition-colors">
-            Return to Store
-          </Link>
+          <button 
+            onClick={() => setIsAuthenticated(false)} 
+            className="text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500 transition-colors border border-black px-4 py-2 hover:border-gray-500"
+          >
+            Sign Out
+          </button>
         </div>
 
         {/* Stats Row */}

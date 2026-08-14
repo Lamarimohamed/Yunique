@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { supabase } from "../lib/supabase"
 
 export type Product = {
   id: string
@@ -27,35 +28,12 @@ export type Order = {
 type DataContextType = {
   products: Product[]
   orders: Order[]
-  addProduct: (product: Omit<Product, "id">) => void
-  updateProduct: (id: string, product: Omit<Product, "id">) => void
-  deleteProduct: (id: string) => void
-  addOrder: (order: Omit<Order, "id" | "date" | "status">) => void
-  updateOrderStatus: (id: string, status: Order["status"]) => void
+  addProduct: (product: Omit<Product, "id">) => Promise<void>
+  updateProduct: (id: string, product: Omit<Product, "id">) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
+  addOrder: (order: Omit<Order, "id" | "date" | "status">) => Promise<void>
+  updateOrderStatus: (id: string, status: Order["status"]) => Promise<void>
 }
-
-const defaultProducts: Product[] = [
-  {
-    id: "1",
-    name: "YUNIQUE OVERSIZED TEE",
-    price: 12000,
-    image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop",
-    description: "Heavyweight cotton jersey. Oversized boxy fit.",
-    sizes: ["XS", "S", "M", "L", "XL"],
-    isNew: true,
-    collection: "Core Essentials"
-  },
-  {
-    id: "2",
-    name: "YUNIQUE ESSENTIAL HOODIE",
-    price: 18500,
-    image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1287&auto=format&fit=crop",
-    description: "Premium fleece. Relaxed fit for everyday wear.",
-    sizes: ["S", "M", "L", "XL"],
-    isNew: false,
-    collection: "Core Essentials"
-  }
-]
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
@@ -64,58 +42,175 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load from localStorage on mount
+  // Fetch data from Supabase on mount
   useEffect(() => {
-    const savedProducts = localStorage.getItem("yunique_products")
-    const savedOrders = localStorage.getItem("yunique_orders")
+    async function fetchData() {
+      // 1. Fetch Products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (productsData && !productsError) {
+        // Map database fields (snake_case) to frontend fields (camelCase)
+        const mappedProducts: Product[] = productsData.map(p => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.image,
+          description: p.description,
+          sizes: p.sizes,
+          isNew: p.is_new,
+          collection: p.collection,
+          isDraft: p.is_draft
+        }))
+        setProducts(mappedProducts)
+      } else if (productsError) {
+        console.error("Error fetching products:", productsError)
+      }
 
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts))
-    } else {
-      setProducts(defaultProducts)
-      localStorage.setItem("yunique_products", JSON.stringify(defaultProducts))
+      // 2. Fetch Orders
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .order('date', { ascending: false })
+
+      if (ordersData && !ordersError) {
+        const mappedOrders: Order[] = ordersData.map(o => ({
+          id: o.id,
+          customerName: o.customer_name,
+          email: o.email,
+          phone: o.phone,
+          address: o.address,
+          items: o.items,
+          total: o.total,
+          status: o.status,
+          date: o.date
+        }))
+        setOrders(mappedOrders)
+      } else if (ordersError) {
+        console.error("Error fetching orders:", ordersError)
+      }
+
+      setIsLoaded(true)
     }
 
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders))
-    }
-    
-    setIsLoaded(true)
+    fetchData()
   }, [])
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("yunique_products", JSON.stringify(products))
-      localStorage.setItem("yunique_orders", JSON.stringify(orders))
+  const addProduct = async (product: Omit<Product, "id">) => {
+    const dbProduct = {
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      sizes: product.sizes,
+      is_new: product.isNew,
+      collection: product.collection,
+      is_draft: product.isDraft
     }
-  }, [products, orders, isLoaded])
-
-  const addProduct = (product: Omit<Product, "id">) => {
-    const newProduct = { ...product, id: Date.now().toString() }
-    setProducts([...products, newProduct])
+    
+    // Insert to Supabase
+    const { data, error } = await supabase
+      .from('products')
+      .insert([dbProduct])
+      .select()
+      .single()
+      
+    if (data && !error) {
+      const newProduct: Product = { ...product, id: data.id }
+      // Update UI
+      setProducts(prev => [newProduct, ...prev])
+    } else {
+      console.error("Error adding product:", error)
+    }
   }
 
-  const updateProduct = (id: string, product: Omit<Product, "id">) => {
+  const updateProduct = async (id: string, product: Omit<Product, "id">) => {
+    // Optimistic UI update for instant feedback
     setProducts(products.map(p => p.id === id ? { ...product, id } : p))
+    
+    const dbProduct = {
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      sizes: product.sizes,
+      is_new: product.isNew,
+      collection: product.collection,
+      is_draft: product.isDraft
+    }
+
+    const { error } = await supabase
+      .from('products')
+      .update(dbProduct)
+      .eq('id', id)
+      
+    if (error) {
+      console.error("Error updating product:", error)
+    }
   }
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
+    // Optimistic UI update
     setProducts(products.filter(p => p.id !== id))
+    
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      
+    if (error) {
+      console.error("Error deleting product:", error)
+    }
   }
 
-  const addOrder = (order: Omit<Order, "id" | "date" | "status">) => {
+  const addOrder = async (order: Omit<Order, "id" | "date" | "status">) => {
+    const orderId = `YQ-${Math.floor(Math.random() * 100000)}`
+    const dateStr = new Date().toISOString()
+    
+    const dbOrder = {
+      id: orderId,
+      customer_name: order.customerName,
+      email: order.email,
+      phone: order.phone,
+      address: order.address,
+      items: order.items,
+      total: order.total,
+      status: 'Pending',
+      date: dateStr
+    }
+
+    // Optimistic UI update
     const newOrder: Order = {
       ...order,
-      id: `YQ-${Math.floor(Math.random() * 100000)}`,
-      date: new Date().toISOString(),
+      id: orderId,
+      date: dateStr,
       status: "Pending"
     }
-    setOrders([newOrder, ...orders])
+    setOrders(prev => [newOrder, ...prev])
+
+    const { error } = await supabase
+      .from('orders')
+      .insert([dbOrder])
+      
+    if (error) {
+      console.error("Error adding order:", error)
+    }
   }
 
-  const updateOrderStatus = (id: string, status: Order["status"]) => {
+  const updateOrderStatus = async (id: string, status: Order["status"]) => {
+    // Optimistic UI update
     setOrders(orders.map(o => o.id === id ? { ...o, status } : o))
+    
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
+      
+    if (error) {
+      console.error("Error updating order status:", error)
+    }
   }
 
   return (
