@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
@@ -34,18 +34,17 @@ export default function AdminDashboard() {
     setIsLoggingIn(true)
     setLoginError("")
     
-    // Check credentials against our new "admins" table
-    const { data, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password)
-      .single()
+    // Authenticate using Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-    if (data) {
+    if (error) {
+      console.error("Login error:", error)
+      setLoginError(error.message)
+    } else if (data.user) {
       setIsAuthenticated(true)
-    } else {
-      setLoginError("Invalid username or password.")
     }
     setIsLoggingIn(false)
   }
@@ -116,15 +115,15 @@ export default function AdminDashboard() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Username
+                Email Address
               </label>
               <input 
-                type="text" 
+                type="email" 
                 required
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full p-4 bg-[#F9F9F9] border border-[#E5E5E5] text-sm text-black placeholder:text-gray-400 focus:outline-none focus:border-black transition-colors"
-                placeholder="Enter admin username"
+                placeholder="Enter admin email"
               />
             </div>
             <div>
@@ -175,7 +174,10 @@ export default function AdminDashboard() {
             </p>
           </div>
           <button 
-            onClick={() => setIsAuthenticated(false)} 
+            onClick={async () => {
+              await supabase.auth.signOut()
+              setIsAuthenticated(false)
+            }} 
             className="text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500 transition-colors border border-black px-4 py-2 hover:border-gray-500"
           >
             Sign Out
