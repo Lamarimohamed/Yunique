@@ -19,7 +19,11 @@ export default function Checkout() {
     wilayaCode: "",
     commune: "",
     deliveryType: "stopdesk" as DeliveryType,
-    address: ""
+    address: "",
+    firstName: "",
+    lastName: "",
+    postalCode: "",
+    email: ""
   })
 
   const communes = useMemo(
@@ -27,11 +31,15 @@ export default function Checkout() {
     [formData.wilayaCode]
   )
 
+  const isStripe = paymentMethod === "stripe"
+
   const subtotal = items.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   )
-  const shipping = formData.wilayaCode
+  const shipping = isStripe
+    ? 0
+    : formData.wilayaCode
     ? getShippingPrice(formData.wilayaCode, formData.deliveryType)
     : 0
   const total = subtotal + shipping
@@ -46,16 +54,30 @@ export default function Checkout() {
     const wilaya = WILAYAS.find(w => w.code === formData.wilayaCode)
     // Mock processing delay
     setTimeout(() => {
-      addOrder({
-        customerName: formData.fullName,
-        phone: formData.phone,
-        wilaya: wilaya?.name ?? "",
-        commune: formData.commune,
-        deliveryType: formData.deliveryType,
-        address: formData.deliveryType === "domicile" ? formData.address : "",
-        items: items,
-        total: total
-      })
+      addOrder(
+        isStripe
+          ? {
+              customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+              phone: formData.phone,
+              email: formData.email,
+              wilaya: "",
+              commune: "",
+              deliveryType: "domicile",
+              address: `${formData.address}${formData.postalCode ? ", " + formData.postalCode : ""}`,
+              items: items,
+              total: total
+            }
+          : {
+              customerName: formData.fullName,
+              phone: formData.phone,
+              wilaya: wilaya?.name ?? "",
+              commune: formData.commune,
+              deliveryType: formData.deliveryType,
+              address: formData.deliveryType === "domicile" ? formData.address : "",
+              items: items,
+              total: total
+            }
+      )
       clearCart()
       setIsProcessing(false)
       setIsSuccess(true)
@@ -121,34 +143,92 @@ export default function Checkout() {
               <h2 className="text-lg font-display tracking-widest uppercase mb-6 border-b border-[#E5E5E5] pb-4">
                 1. Customer Information
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.fullName}
-                    onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                    placeholder="Full name"
-                  />
+
+              {isStripe ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="First name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="Last name"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Phone Number (with country code)
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="+213 X XX XX XX XX"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="Email for order confirmation"
+                    />
+                  </div>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                    placeholder="0X XX XX XX XX"
-                  />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.fullName}
+                      onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="0X XX XX XX XX"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </section>
 
             {/* Shipping Info */}
@@ -157,101 +237,11 @@ export default function Checkout() {
                 2. Shipping
               </h2>
 
-              {/* Delivery Type */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label
-                  className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
-                    formData.deliveryType === "stopdesk"
-                      ? "border-black bg-white"
-                      : "border-[#E5E5E5] bg-white hover:border-gray-400"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="stopdesk"
-                    checked={formData.deliveryType === "stopdesk"}
-                    onChange={() => setFormData({ ...formData, deliveryType: "stopdesk" })}
-                    className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
-                  />
-                  <Building2 size={20} strokeWidth={1.5} className="text-gray-400" />
-                  <div>
-                    <span className="block text-xs font-semibold tracking-widest uppercase">
-                      Yalidine Stop Desk
-                    </span>
-                    <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
-                      Pick up from the local office
-                    </span>
-                  </div>
-                </label>
-                <label
-                  className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
-                    formData.deliveryType === "domicile"
-                      ? "border-black bg-white"
-                      : "border-[#E5E5E5] bg-white hover:border-gray-400"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="domicile"
-                    checked={formData.deliveryType === "domicile"}
-                    onChange={() => setFormData({ ...formData, deliveryType: "domicile" })}
-                    className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
-                  />
-                  <Home size={20} strokeWidth={1.5} className="text-gray-400" />
-                  <div>
-                    <span className="block text-xs font-semibold tracking-widest uppercase">
-                      Home Delivery
-                    </span>
-                    <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
-                      Delivered to your door
-                    </span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Wilaya
-                  </label>
-                  <select
-                    required
-                    value={formData.wilayaCode}
-                    onChange={e => handleWilayaChange(e.target.value)}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                  >
-                    <option value="" disabled>Select wilaya</option>
-                    {WILAYAS.map(w => (
-                      <option key={w.code} value={w.code}>{w.code} - {w.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Commune
-                  </label>
-                  <select
-                    required
-                    disabled={!formData.wilayaCode}
-                    value={formData.commune}
-                    onChange={e => setFormData({ ...formData, commune: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors disabled:bg-[#F2F2F0] disabled:cursor-not-allowed"
-                  >
-                    <option value="" disabled>
-                      {formData.wilayaCode ? "Select commune" : "Select a wilaya first"}
-                    </option>
-                    {communes.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {formData.deliveryType === "domicile" && (
+              {isStripe ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                      Home Address
+                      Address
                     </label>
                     <input
                       type="text"
@@ -259,11 +249,134 @@ export default function Checkout() {
                       value={formData.address}
                       onChange={e => setFormData({ ...formData, address: e.target.value })}
                       className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                      placeholder="Street, building, floor..."
+                      placeholder="Street, building, apt..."
                     />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Postal Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.postalCode}
+                      onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="Postal code"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Delivery Type */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <label
+                      className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
+                        formData.deliveryType === "stopdesk"
+                          ? "border-black bg-white"
+                          : "border-[#E5E5E5] bg-white hover:border-gray-400"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="deliveryType"
+                        value="stopdesk"
+                        checked={formData.deliveryType === "stopdesk"}
+                        onChange={() => setFormData({ ...formData, deliveryType: "stopdesk" })}
+                        className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
+                      />
+                      <Building2 size={20} strokeWidth={1.5} className="text-gray-400" />
+                      <div>
+                        <span className="block text-xs font-semibold tracking-widest uppercase">
+                          Yalidine Stop Desk
+                        </span>
+                        <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
+                          Pick up from the local office
+                        </span>
+                      </div>
+                    </label>
+                    <label
+                      className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
+                        formData.deliveryType === "domicile"
+                          ? "border-black bg-white"
+                          : "border-[#E5E5E5] bg-white hover:border-gray-400"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="deliveryType"
+                        value="domicile"
+                        checked={formData.deliveryType === "domicile"}
+                        onChange={() => setFormData({ ...formData, deliveryType: "domicile" })}
+                        className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
+                      />
+                      <Home size={20} strokeWidth={1.5} className="text-gray-400" />
+                      <div>
+                        <span className="block text-xs font-semibold tracking-widest uppercase">
+                          Home Delivery
+                        </span>
+                        <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
+                          Delivered to your door
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                        Wilaya
+                      </label>
+                      <select
+                        required
+                        value={formData.wilayaCode}
+                        onChange={e => handleWilayaChange(e.target.value)}
+                        className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      >
+                        <option value="" disabled>Select wilaya</option>
+                        {WILAYAS.map(w => (
+                          <option key={w.code} value={w.code}>{w.code} - {w.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                        Commune
+                      </label>
+                      <select
+                        required
+                        disabled={!formData.wilayaCode}
+                        value={formData.commune}
+                        onChange={e => setFormData({ ...formData, commune: e.target.value })}
+                        className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors disabled:bg-[#F2F2F0] disabled:cursor-not-allowed"
+                      >
+                        <option value="" disabled>
+                          {formData.wilayaCode ? "Select commune" : "Select a wilaya first"}
+                        </option>
+                        {communes.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.deliveryType === "domicile" && (
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                          Home Address
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.address}
+                          onChange={e => setFormData({ ...formData, address: e.target.value })}
+                          className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                          placeholder="Street, building, floor..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </section>
 
             {/* Payment Method */}
@@ -301,7 +414,7 @@ export default function Checkout() {
                     </div>
                     <CreditCard size={24} strokeWidth={1} className="text-gray-400" />
                   </div>
-                  
+
                   {/* Stripe Mock Form */}
                   <AnimatePresence>
                     {paymentMethod === "stripe" && (
@@ -392,7 +505,7 @@ export default function Checkout() {
             <h2 className="text-lg font-display tracking-widest uppercase mb-6 border-b border-[#E5E5E5] pb-4">
               Order Summary
             </h2>
-            
+
             <div className="space-y-6 max-h-[40vh] overflow-y-auto pr-2 mb-6">
               {items.map((item) => (
                 <div key={`${item.id}-${item.size}`} className="flex gap-4">
@@ -414,7 +527,7 @@ export default function Checkout() {
                       SIZE: {item.size}
                     </p>
                   </div>
-                  <p className="text-xs font-semibold tracking-widest self-center">
+                  <p className="text-xs font-semibold tracking-widest self-center text-black">
                     {(item.price * item.quantity).toLocaleString()} DZD
                   </p>
                 </div>
@@ -428,11 +541,13 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between items-center text-xs font-semibold tracking-widest uppercase text-gray-500">
                 <span>Shipping</span>
-                <span className="text-black">{shipping.toLocaleString()} DZD</span>
+                <span className="text-black">
+                  {isStripe ? "Calculated at payment" : `${shipping.toLocaleString()} DZD`}
+                </span>
               </div>
               <div className="border-t border-[#E5E5E5] pt-4 mt-4 flex justify-between items-center">
-                <span className="text-sm font-semibold tracking-widest uppercase">Total</span>
-                <span className="text-lg font-semibold tracking-widest">
+                <span className="text-sm font-semibold tracking-widest uppercase text-black">Total</span>
+                <span className="text-lg font-semibold tracking-widest text-black">
                   {total.toLocaleString()} <span className="text-[10px] text-gray-500">DZD</span>
                 </span>
               </div>
