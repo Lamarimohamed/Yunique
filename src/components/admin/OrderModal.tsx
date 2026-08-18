@@ -30,7 +30,7 @@ export default function OrderModal({ isOpen, onClose, order }: OrderModalProps) 
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[#E5E5E5] relative shadow-2xl"
+          className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[#E5E5E5] relative shadow-2xl text-black"
         >
           <div className="sticky top-0 bg-white border-b border-[#E5E5E5] p-6 flex justify-between items-center z-10">
             <div>
@@ -130,7 +130,7 @@ export default function OrderModal({ isOpen, onClose, order }: OrderModalProps) 
                   <span>Shipping</span>
                   <span className="text-black">{shipping.toLocaleString()} DZD</span>
                 </div>
-                <div className="flex justify-between text-sm font-semibold tracking-widest uppercase mt-4 pt-4 border-t border-[#E5E5E5]">
+                <div className="flex justify-between text-sm font-semibold tracking-widest uppercase mt-4 pt-4 border-t border-[#E5E5E5] text-black">
                   <span>Total</span>
                   <span>{order.total.toLocaleString()} DZD</span>
                 </div>

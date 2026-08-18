@@ -99,7 +99,7 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 md:p-8 border border-[#E5E5E5] relative shadow-2xl"
+          className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 md:p-8 border border-[#E5E5E5] relative shadow-2xl text-black"
         >
           <button
             onClick={onClose}

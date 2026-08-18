@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   // --- LOGIN SCREEN ---
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#F9F9F9] pt-24 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#F9F9F9] pt-24 flex items-center justify-center p-6 text-black">
         <div className="bg-white p-10 max-w-md w-full border border-[#E5E5E5] shadow-sm">
           <h1 className="text-2xl font-display tracking-widest uppercase mb-2 text-center text-black">
             Admin Portal
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
 
   // --- DASHBOARD SCREEN ---
   return (
-    <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12">
+    <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12 text-black">
       <div className="max-w-[1440px] mx-auto px-6">
         <div className="flex justify-between items-end mb-8 border-b border-[#E5E5E5] pb-6">
           <div>
