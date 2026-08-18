@@ -1,44 +1,58 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "../context/CartContext"
 import { useData } from "../context/DataContext"
 import { Link } from "react-router"
-import { CreditCard, Truck, ChevronLeft } from "lucide-react"
+import { CreditCard, Truck, Building2, Home, ChevronLeft } from "lucide-react"
+import { WILAYAS, getCommunesByWilaya, getShippingPrice, DeliveryType } from "../data/shipping"
 
 export default function Checkout() {
   const { items, cartCount, clearCart } = useCart()
   const { addOrder } = useData()
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "cod">("stripe")
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "cod">("cod")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
   const [formData, setFormData] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-    address: "",
-    city: "",
-    postalCode: "",
-    phone: ""
+    fullName: "",
+    phone: "",
+    wilayaCode: "",
+    commune: "",
+    deliveryType: "stopdesk" as DeliveryType,
+    address: ""
   })
+
+  const communes = useMemo(
+    () => getCommunesByWilaya(formData.wilayaCode),
+    [formData.wilayaCode]
+  )
 
   const subtotal = items.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   )
-  const shipping = 500 // Flat rate shipping for example
+  const shipping = formData.wilayaCode
+    ? getShippingPrice(formData.wilayaCode, formData.deliveryType)
+    : 0
   const total = subtotal + shipping
+
+  const handleWilayaChange = (code: string) => {
+    setFormData({ ...formData, wilayaCode: code, commune: "" })
+  }
 
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
+    const wilaya = WILAYAS.find(w => w.code === formData.wilayaCode)
     // Mock processing delay
     setTimeout(() => {
       addOrder({
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
+        customerName: formData.fullName,
         phone: formData.phone,
-        address: `${formData.address}, ${formData.city} ${formData.postalCode}`,
+        wilaya: wilaya?.name ?? "",
+        commune: formData.commune,
+        deliveryType: formData.deliveryType,
+        address: formData.deliveryType === "domicile" ? formData.address : "",
         items: items,
         total: total
       })
@@ -102,92 +116,23 @@ export default function Checkout() {
           </Link>
 
           <form onSubmit={handleCheckout} className="space-y-10">
-            {/* Contact Info */}
+            {/* Customer Info */}
             <section>
               <h2 className="text-lg font-display tracking-widest uppercase mb-6 border-b border-[#E5E5E5] pb-4">
-                1. Contact Information
-              </h2>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Shipping Info */}
-            <section>
-              <h2 className="text-lg font-display tracking-widest uppercase mb-6 border-b border-[#E5E5E5] pb-4">
-                2. Shipping Address
+                1. Customer Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={e => setFormData({ ...formData, lastName: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                  />
-                </div>
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Address
+                    Full Name
                   </label>
                   <input
                     type="text"
                     required
-                    value={formData.address}
-                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                    value={formData.fullName}
+                    onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.city}
-                    onChange={e => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                    Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.postalCode}
-                    onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
-                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                    placeholder="Full name"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -200,8 +145,124 @@ export default function Checkout() {
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                    placeholder="0X XX XX XX XX"
                   />
                 </div>
+              </div>
+            </section>
+
+            {/* Shipping Info */}
+            <section>
+              <h2 className="text-lg font-display tracking-widest uppercase mb-6 border-b border-[#E5E5E5] pb-4">
+                2. Shipping
+              </h2>
+
+              {/* Delivery Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <label
+                  className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
+                    formData.deliveryType === "stopdesk"
+                      ? "border-black bg-white"
+                      : "border-[#E5E5E5] bg-white hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="stopdesk"
+                    checked={formData.deliveryType === "stopdesk"}
+                    onChange={() => setFormData({ ...formData, deliveryType: "stopdesk" })}
+                    className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
+                  />
+                  <Building2 size={20} strokeWidth={1.5} className="text-gray-400" />
+                  <div>
+                    <span className="block text-xs font-semibold tracking-widest uppercase">
+                      Yalidine Stop Desk
+                    </span>
+                    <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
+                      Pick up from the local office
+                    </span>
+                  </div>
+                </label>
+                <label
+                  className={`flex items-center gap-3 border p-4 cursor-pointer transition-colors ${
+                    formData.deliveryType === "domicile"
+                      ? "border-black bg-white"
+                      : "border-[#E5E5E5] bg-white hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="domicile"
+                    checked={formData.deliveryType === "domicile"}
+                    onChange={() => setFormData({ ...formData, deliveryType: "domicile" })}
+                    className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
+                  />
+                  <Home size={20} strokeWidth={1.5} className="text-gray-400" />
+                  <div>
+                    <span className="block text-xs font-semibold tracking-widest uppercase">
+                      Home Delivery
+                    </span>
+                    <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
+                      Delivered to your door
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                    Wilaya
+                  </label>
+                  <select
+                    required
+                    value={formData.wilayaCode}
+                    onChange={e => handleWilayaChange(e.target.value)}
+                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                  >
+                    <option value="" disabled>Select wilaya</option>
+                    {WILAYAS.map(w => (
+                      <option key={w.code} value={w.code}>{w.code} - {w.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                    Commune
+                  </label>
+                  <select
+                    required
+                    disabled={!formData.wilayaCode}
+                    value={formData.commune}
+                    onChange={e => setFormData({ ...formData, commune: e.target.value })}
+                    className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors disabled:bg-[#F2F2F0] disabled:cursor-not-allowed"
+                  >
+                    <option value="" disabled>
+                      {formData.wilayaCode ? "Select commune" : "Select a wilaya first"}
+                    </option>
+                    {communes.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.deliveryType === "domicile" && (
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                      Home Address
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.address}
+                      onChange={e => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full p-4 bg-white border border-[#E5E5E5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                      placeholder="Street, building, floor..."
+                    />
+                  </div>
+                )}
               </div>
             </section>
 

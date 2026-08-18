@@ -16,8 +16,10 @@ export type Product = {
 export type Order = {
   id: string
   customerName: string
-  email: string
   phone: string
+  wilaya: string
+  commune: string
+  deliveryType: "stopdesk" | "domicile"
   address: string
   items: any[]
   total: number
@@ -79,8 +81,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const mappedOrders: Order[] = ordersData.map(o => ({
           id: o.id,
           customerName: o.customer_name,
-          email: o.email,
           phone: o.phone,
+          wilaya: o.wilaya,
+          commune: o.commune,
+          deliveryType: o.delivery_type,
           address: o.address,
           items: o.items,
           total: o.total,
@@ -172,8 +176,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const dbOrder = {
       id: orderId,
       customer_name: order.customerName,
-      email: order.email,
       phone: order.phone,
+      wilaya: order.wilaya,
+      commune: order.commune,
+      delivery_type: order.deliveryType,
       address: order.address,
       items: order.items,
       total: order.total,

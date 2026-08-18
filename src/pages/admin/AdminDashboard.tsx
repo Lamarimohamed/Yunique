@@ -68,15 +68,17 @@ export default function AdminDashboard() {
   }
 
   const exportOrdersToCSV = () => {
-    const headers = ["Order ID", "Date", "Customer Name", "Email", "Phone", "Address", "Total", "Status", "Items"]
+    const headers = ["Order ID", "Date", "Customer Name", "Phone", "Delivery Type", "Wilaya", "Commune", "Home Address", "Total", "Status", "Items"]
     const rows = orders.map(order => {
       const itemsStr = order.items.map(i => `${i.name} (${i.quantity}x ${i.size})`).join(" | ")
       return [
         order.id,
         new Date(order.date).toLocaleDateString(),
         `"${order.customerName}"`,
-        order.email,
         order.phone,
+        order.deliveryType === "domicile" ? "Home Delivery" : "Stop Desk",
+        `"${order.wilaya}"`,
+        `"${order.commune}"`,
         `"${order.address}"`,
         order.total,
         order.status,
@@ -323,7 +325,7 @@ export default function AdminDashboard() {
                       <td className="p-4 text-sm font-semibold tracking-widest">{order.id}</td>
                       <td className="p-4">
                         <p className="text-sm font-semibold uppercase">{order.customerName}</p>
-                        <p className="text-xs text-gray-500">{order.email}</p>
+                        <p className="text-xs text-gray-500">{order.phone} · {order.wilaya}</p>
                       </td>
                       <td className="p-4 text-xs font-sans text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
                       <td className="p-4 text-sm font-sans tracking-widest">{order.total.toLocaleString()} DZD</td>

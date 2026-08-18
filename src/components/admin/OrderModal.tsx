@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { Order } from "../../context/DataContext"
+import { WILAYAS, getShippingPrice } from "../../data/shipping"
 
 type OrderModalProps = {
   isOpen: boolean
@@ -11,7 +12,8 @@ type OrderModalProps = {
 export default function OrderModal({ isOpen, onClose, order }: OrderModalProps) {
   if (!isOpen || !order) return null
 
-  const shipping = 500 // Matching the checkout logic
+  const wilayaCode = WILAYAS.find(w => w.name === order.wilaya)?.code ?? ""
+  const shipping = wilayaCode ? getShippingPrice(wilayaCode, order.deliveryType) : 0
   const subtotal = order.total - shipping
 
   return (
@@ -59,17 +61,25 @@ export default function OrderModal({ isOpen, onClose, order }: OrderModalProps) 
                   <p className="font-semibold uppercase">{order.customerName}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] tracking-widest uppercase text-gray-400">Email</p>
-                  <p>{order.email}</p>
-                </div>
-                <div>
                   <p className="text-[10px] tracking-widest uppercase text-gray-400">Phone</p>
                   <p>{order.phone}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] tracking-widest uppercase text-gray-400">Shipping Address</p>
-                  <p className="uppercase">{order.address}</p>
+                  <p className="text-[10px] tracking-widest uppercase text-gray-400">Delivery</p>
+                  <p className="uppercase">
+                    {order.deliveryType === "domicile" ? "Home Delivery" : "Yalidine Stop Desk"}
+                  </p>
                 </div>
+                <div>
+                  <p className="text-[10px] tracking-widest uppercase text-gray-400">Wilaya / Commune</p>
+                  <p className="uppercase">{order.wilaya} - {order.commune}</p>
+                </div>
+                {order.deliveryType === "domicile" && (
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-gray-400">Home Address</p>
+                    <p className="uppercase">{order.address}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-[10px] tracking-widest uppercase text-gray-400">Status</p>
                   <span className={`inline-block mt-1 text-[10px] font-semibold tracking-widest uppercase px-2 py-1 ${
