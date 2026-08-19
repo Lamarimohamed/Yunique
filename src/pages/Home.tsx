@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div ref={containerRef} className="bg-[#050505] min-h-screen text-white">
       {/* 01 — HERO */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-[#050505]">
+      <section data-navtheme="dark" className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-[#050505]">
         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=2832&auto=format&fit=crop')] bg-cover bg-center mix-blend-screen grayscale" />
 
         {/* Animated Centered Logo with Disappear/Reappear Loop */}
@@ -77,7 +77,7 @@ function BrandStatement({ scrollYProgress }: { scrollYProgress: any }) {
   const x = useTransform(scrollYProgress, [0, 0.5], ["0%", "-20%"])
 
   return (
-    <section className="py-48 overflow-hidden relative bg-[#F2F2F0] text-black">
+    <section data-navtheme="light" className="py-48 overflow-hidden relative bg-[#F2F2F0] text-black">
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
         <svg
           viewBox="0 0 100 100"
@@ -152,7 +152,7 @@ function NewDropSection() {
   ]
 
   return (
-    <section className="bg-white text-black py-24">
+    <section data-navtheme="light" className="bg-white text-black py-24">
       <div className="max-w-[1440px] mx-auto px-6">
         <div className="flex justify-between items-end mb-16 border-b border-[#E5E5E5] pb-6">
           <h2 className="text-4xl md:text-5xl font-display tracking-tighter uppercase">
@@ -212,7 +212,7 @@ function NewDropSection() {
 
 function EditorialCampaign() {
   return (
-    <section className="relative h-[80vh] w-full flex items-center justify-center overflow-hidden bg-black text-white">
+    <section data-navtheme="dark" className="relative h-[80vh] w-full flex items-center justify-center overflow-hidden bg-black text-white">
       <div className="absolute inset-0">
         <motion.img
           src="https://images.unsplash.com/photo-1492601229413-1768652d5b6d?q=80&w=2938&auto=format&fit=crop"

@@ -4,8 +4,8 @@ import {
   useMotionValueEvent,
   AnimatePresence,
 } from "framer-motion"
-import { useState } from "react"
-import { Link, useLocation } from "react-router"
+import { useState, useEffect, useCallback } from "react"
+import { Link, useLocation, useNavigate } from "react-router"
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react"
 import { useCart } from "../../context/CartContext"
 
@@ -13,10 +13,51 @@ export default function Navbar() {
   const { scrollY } = useScroll()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const location = useLocation()
+  const navigate = useNavigate()
   const { cartCount, openCart } = useCart()
 
-  const isLightMode = location.pathname.includes("/shop") || location.pathname.includes("/product") || location.pathname.includes("/checkout")
+  // Routes that are entirely light-background (no per-section dark hero).
+  const staticLightRoute =
+    location.pathname.includes("/shop") ||
+    location.pathname.includes("/product") ||
+    location.pathname.includes("/checkout") ||
+    location.pathname.includes("/drop") ||
+    location.pathname.includes("/collections")
+
+  // For mixed-content pages (Home, About) detect the theme of whichever
+  // section currently sits behind the navbar, via data-navtheme attributes.
+  const [sectionTheme, setSectionTheme] = useState<"light" | "dark" | null>(null)
+
+  const detectSectionTheme = useCallback(() => {
+    if (typeof document === "undefined") return
+    const el = document.elementFromPoint(window.innerWidth / 2, 100)
+    const themed = el?.closest("[data-navtheme]") as HTMLElement | null
+    setSectionTheme((themed?.dataset.navtheme as "light" | "dark") ?? null)
+  }, [])
+
+  useEffect(() => {
+    if (staticLightRoute) return
+    detectSectionTheme()
+    window.addEventListener("scroll", detectSectionTheme, { passive: true })
+    window.addEventListener("resize", detectSectionTheme)
+    return () => {
+      window.removeEventListener("scroll", detectSectionTheme)
+      window.removeEventListener("resize", detectSectionTheme)
+    }
+  }, [staticLightRoute, location.pathname, detectSectionTheme])
+
+  const isLightMode = staticLightRoute || sectionTheme === "light"
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const query = searchQuery.trim()
+    setSearchOpen(false)
+    setSearchQuery("")
+    navigate(query ? `/shop?q=${encodeURIComponent(query)}` : "/shop")
+  }
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 50) {
@@ -124,6 +165,7 @@ export default function Navbar() {
           }`}>
             <button
               aria-label="Search"
+              onClick={() => setSearchOpen(true)}
               className={`transition-colors focus-visible:outline-none focus-visible:ring-1 hidden md:block ${
                 isLightMode
                   ? "hover:text-gray-600 focus-visible:ring-black"
@@ -253,6 +295,10 @@ export default function Navbar() {
                 }`}>
                   <button
                     aria-label="Search"
+                    onClick={() => {
+                      setMobileMenuOpen(false)
+                      setSearchOpen(true)
+                    }}
                     className={`transition-colors flex items-center space-x-2 ${
                       isLightMode
                         ? "hover:text-gray-900"
@@ -279,6 +325,55 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </motion.nav>
+
+      {/* Search Overlay */}
+      <AnimatePresence>
+        {searchOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[60]"
+              onClick={() => setSearchOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed top-0 left-0 w-full z-[70] bg-white border-b border-[#E5E5E5] py-8"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Search"
+            >
+              <form
+                onSubmit={handleSearchSubmit}
+                className="max-w-[900px] mx-auto px-6 flex items-center gap-4"
+              >
+                <Search size={22} strokeWidth={1.5} className="text-black shrink-0" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search products..."
+                  className="flex-1 bg-transparent text-black text-lg font-display tracking-wide uppercase focus:outline-none placeholder:text-gray-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(false)}
+                  aria-label="Close Search"
+                  className="text-black hover:text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-black"
+                >
+                  <X size={22} strokeWidth={1.5} />
+                </button>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   )
 }

@@ -3,7 +3,7 @@ import { motion } from "framer-motion"
 export default function About() {
   return (
     <main className="min-h-screen bg-[#050505] text-white pt-32 pb-32">
-      <section className="h-[70vh] flex items-center justify-center relative overflow-hidden px-6">
+      <section data-navtheme="dark" className="h-[70vh] flex items-center justify-center relative overflow-hidden px-6">
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
           {/* Faint massive fingerprint behind text */}
           <svg
@@ -53,7 +53,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="bg-white text-black py-32 rounded-t-[3rem]">
+      <section data-navtheme="light" className="bg-white text-black py-32 rounded-t-[3rem]">
         <div className="max-w-[800px] mx-auto px-6 font-sans text-xl md:text-3xl leading-relaxed text-gray-600">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
