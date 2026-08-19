@@ -6,6 +6,31 @@ import OrderModal from "../../components/admin/OrderModal"
 import { Link } from "react-router"
 import { supabase } from "../../lib/supabase"
 
+async function isAdminUser(userId: string, email?: string | null): Promise<boolean> {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const role = sessionData.session?.user?.app_metadata?.role
+    if (role === "admin") return true
+
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("id, email")
+      .eq("id", userId)
+      .limit(1)
+      .maybeSingle()
+
+    if (error) {
+      console.warn("admin_users table check failed (run SQL migration?)", error)
+      return false
+    }
+    if (!data) return false
+    return true
+  } catch (e) {
+    console.error("admin check error", e)
+    return false
+  }
+}
+
 export default function AdminDashboard() {
   const { products, orders, addProduct, updateProduct, deleteProduct, updateOrderStatus } = useData()
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products")
@@ -34,7 +59,6 @@ export default function AdminDashboard() {
     setIsLoggingIn(true)
     setLoginError("")
     
-    // Authenticate using Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -44,7 +68,13 @@ export default function AdminDashboard() {
       console.error("Login error:", error)
       setLoginError(error.message)
     } else if (data.user) {
-      setIsAuthenticated(true)
+      const ok = await isAdminUser(data.user.id, data.user.email)
+      if (!ok) {
+        await supabase.auth.signOut()
+        setLoginError("This account is not authorized as an admin.")
+      } else {
+        setIsAuthenticated(true)
+      }
     }
     setIsLoggingIn(false)
   }
