@@ -1,7 +1,14 @@
 {
-  "description": "Streamline your tasks with an intuitive web app designed for professionals, enhancing productivity and collaboration through efficient project management tools.",
+  "title": "Yuniquee — Premium Streetwear & Fashion",
+  "description": "Discover Yuniquee — premium streetwear, oversized fits, and exclusive collections. Shop the latest trends in Algerian fashion.",
   "robots": {
-    "index": false
+    "index": true
+  },
+  "icons": {
+    "icon": "/favicon.svg"
+  },
+  "openGraph": {
+    "image": "https://yuniquee.com/android-chrome-512x512.png"
   },
   "accessibility": {
     "addBypassLinks": false,
