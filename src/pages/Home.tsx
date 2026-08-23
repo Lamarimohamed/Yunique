@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from "framer-motion"
 import { useRef } from "react"
 import { Link } from "react-router"
 import { LogoIntroSvg } from "@/components/ui/LogoIntroSvg"
+import { useData } from "@/context/DataContext"
 
 export default function Home() {
   const containerRef = useRef(null)
@@ -116,40 +117,36 @@ function BrandStatement({ scrollYProgress }: { scrollYProgress: any }) {
 }
 
 function NewDropSection() {
-  const products = [
-    {
-      id: "01",
-      name: "YUNIQUE OVERSIZED TEE",
-      color: "BLACK",
-      price: "12,000 DZD",
-      img1: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1287&auto=format&fit=crop",
-    },
-    {
-      id: "02",
-      name: "RAW FORM HOODIE",
-      color: "OFF BLACK",
-      price: "18,500 DZD",
-      img1: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1287&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=1287&auto=format&fit=crop",
-    },
-    {
-      id: "03",
-      name: "IDENTITY CARGO PANT",
-      color: "DARK GRAY",
-      price: "24,000 DZD",
-      img1: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?q=80&w=1480&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?q=80&w=1480&auto=format&fit=crop",
-    },
-    {
-      id: "04",
-      name: "SIGNATURE CAP",
-      color: "BLACK",
-      price: "5,500 DZD",
-      img1: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=1336&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=1336&auto=format&fit=crop",
-    },
-  ]
+  const { products } = useData()
+  const dropProducts = products.filter((p) => !p.isDraft && p.isNew).slice(0, 4)
+
+  if (dropProducts.length === 0) {
+    return (
+      <section data-navtheme="light" className="bg-white text-black py-24">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="flex justify-between items-end mb-16 border-b border-[#E5E5E5] pb-6">
+            <h2 className="text-4xl md:text-5xl font-display tracking-tighter uppercase">
+              NEW DROP
+            </h2>
+            <Link
+              to="/shop"
+              className="text-xs font-sans font-semibold tracking-[0.1em] text-gray-500 hover:text-black transition-colors uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black underline underline-offset-4"
+            >
+              VIEW ALL
+            </Link>
+          </div>
+          <div className="border border-dashed border-[#E5E5E5] py-24 text-center">
+            <p className="font-display tracking-widest uppercase text-sm text-gray-400">
+              DROP COMING SOON
+            </p>
+            <p className="mt-3 font-sans text-xs tracking-widest uppercase text-gray-400">
+              Check back later for new releases
+            </p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section data-navtheme="light" className="bg-white text-black py-24">
@@ -167,38 +164,36 @@ function NewDropSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.map((p) => (
+          {dropProducts.map((p, i) => (
             <div
               key={p.id}
               className="group cursor-none relative"
               data-cursor="view"
             >
               <Link
-                to="/product/01"
+                to={`/product/${p.id}`}
                 className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
               >
                 <div className="relative aspect-[3/4] overflow-hidden mb-6 bg-[#F2F2F0]">
-                  {/* Clean standard color images - no extreme grayscale filters */}
                   <img
-                    src={p.img1}
-                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out group-hover:opacity-0"
-                    alt={p.name}
-                  />
-                  <img
-                    src={p.img2}
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100"
+                    src={p.image}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
                     alt={p.name}
                   />
                 </div>
 
                 <div className="flex justify-between items-start font-sans text-xs tracking-widest uppercase text-black">
                   <div>
-                    <p className="text-gray-400 mb-1">{p.id}</p>
+                    <p className="text-gray-400 mb-1">{String(i + 1).padStart(2, "0")}</p>
                     <h3 className="font-semibold">{p.name}</h3>
-                    <p className="text-gray-500 mt-1">{p.color}</p>
+                    <p className="text-gray-500 mt-1">
+                      {(p.sizes || []).join(" / ")}
+                    </p>
                   </div>
                   <div>
-                    <p className="font-semibold">{p.price}</p>
+                    <p className="font-semibold">
+                      {new Intl.NumberFormat("en-US").format(p.price)} DZD
+                    </p>
                   </div>
                 </div>
               </Link>

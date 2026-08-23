@@ -23,7 +23,7 @@ export type Order = {
   address: string
   items: any[]
   total: number
-  status: "Pending" | "Shipped" | "Delivered"
+  status: "Pending" | "Shipped" | "Delivered" | "Cancelled"
   date: string
 }
 
@@ -35,6 +35,7 @@ type DataContextType = {
   deleteProduct: (id: string) => Promise<void>
   addOrder: (order: Omit<Order, "id" | "date" | "status">) => Promise<void>
   updateOrderStatus: (id: string, status: Order["status"]) => Promise<void>
+  deleteOrder: (id: string) => Promise<void>
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -219,8 +220,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const deleteOrder = async (id: string) => {
+    // Optimistic UI update
+    setOrders(prev => prev.filter(o => o.id !== id))
+    
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id)
+      
+    if (error) {
+      console.error("Error deleting order:", error)
+    }
+  }
+
   return (
-    <DataContext.Provider value={{ products, orders, addProduct, updateProduct, deleteProduct, addOrder, updateOrderStatus }}>
+    <DataContext.Provider value={{ products, orders, addProduct, updateProduct, deleteProduct, addOrder, updateOrderStatus, deleteOrder }}>
       {children}
     </DataContext.Provider>
   )

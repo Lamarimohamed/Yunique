@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useData, Product, Order } from "../../context/DataContext"
 import { Package, ShoppingBag, Plus, Edit2, Trash2, Download, TrendingUp, DollarSign } from "lucide-react"
 import ProductModal from "../../components/admin/ProductModal"
@@ -31,12 +31,21 @@ async function isAdminUser(userId: string, email?: string | null): Promise<boole
   }
 }
 
+const STATUSES: { value: Order["status"]; label: string; cls: string }[] = [
+  { value: "Pending",   label: "Pending",   cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  { value: "Shipped",   label: "Shipped",   cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  { value: "Delivered", label: "Delivered", cls: "bg-green-50 text-green-700 border-green-200" },
+  { value: "Cancelled", label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200" },
+]
+const statusCls = (s: Order["status"]) => STATUSES.find(x => x.value === s)?.cls ?? STATUSES[0].cls
+
 export default function AdminDashboard() {
-  const { products, orders, addProduct, updateProduct, deleteProduct, updateOrderStatus } = useData()
+  const { products, orders, addProduct, updateProduct, deleteProduct, updateOrderStatus, deleteOrder } = useData()
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products")
   
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
@@ -53,6 +62,41 @@ export default function AdminDashboard() {
   const totalOrders = orders.length
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
+
+  // ⭐ Persist admin login across page refreshes
+  useEffect(() => {
+    let cancelled = false
+    async function checkExistingSession() {
+      try {
+        const { data } = await supabase.auth.getSession()
+        const u = data.session?.user
+        if (u && (await isAdminUser(u.id, u.email))) {
+          if (!cancelled) setIsAuthenticated(true)
+        }
+      } catch (e) {
+        console.warn("session check failed", e)
+      } finally {
+        if (!cancelled) setCheckingSession(false)
+      }
+    }
+    checkExistingSession()
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+        setIsAuthenticated(false)
+        return
+      }
+      if (s?.user) {
+        const ok = await isAdminUser(s.user.id, s.user.email)
+        setIsAuthenticated(ok)
+        if (!ok) await supabase.auth.signOut()
+      }
+    })
+    return () => {
+      cancelled = true
+      sub.subscription.unsubscribe()
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
