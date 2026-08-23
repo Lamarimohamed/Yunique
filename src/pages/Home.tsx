@@ -216,6 +216,8 @@ function EditorialCampaign() {
           whileInView={{ scale: 1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
           data-cursor="explore"
+          loading="lazy"
+          alt="Yunique Collection 01"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-80" />
       </div>
