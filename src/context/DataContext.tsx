@@ -6,6 +6,8 @@ export type Product = {
   name: string
   price: number
   image: string
+  images: string[]
+  colors: string[]
   description: string
   sizes: string[]
   isNew?: boolean
@@ -61,6 +63,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           name: p.name,
           price: p.price,
           image: p.image,
+          images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [p.image],
+          colors: Array.isArray(p.colors) ? p.colors : [],
           description: p.description,
           sizes: p.sizes,
           isNew: p.is_new,
@@ -108,6 +112,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       name: product.name,
       price: product.price,
       image: product.image,
+      images: product.images,
+      colors: product.colors,
       description: product.description,
       sizes: product.sizes,
       is_new: product.isNew,
@@ -139,6 +145,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       name: product.name,
       price: product.price,
       image: product.image,
+      images: product.images,
+      colors: product.colors,
       description: product.description,
       sizes: product.sizes,
       is_new: product.isNew,

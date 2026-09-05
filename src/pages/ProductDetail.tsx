@@ -25,6 +25,7 @@ export default function ProductDetail() {
   }
 
   const sizes = product.sizes
+  const images = product.images?.length ? product.images : [product.image]
 
   const handleAdd = () => {
     if (!selectedSize) return
@@ -46,18 +47,15 @@ export default function ProductDetail() {
       <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-6rem)]">
         {/* Left: Gallery */}
         <div className="w-full lg:w-2/3 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <img
-            src={product.image}
-            alt={`${product.name} Front`}
-            className="w-full h-[80vh] object-cover bg-[#F2F2F0]"
-            data-cursor="explore"
-          />
-          <img
-            src={product.image}
-            alt={`${product.name} Back`}
-            className="w-full h-[80vh] object-cover bg-[#F2F2F0]"
-            data-cursor="explore"
-          />
+          {images.map((image, index) => (
+            <img
+              key={`${image}-${index}`}
+              src={image}
+              alt={`${product.name} ${index + 1}`}
+              className="w-full h-[80vh] object-cover bg-[#F2F2F0]"
+              data-cursor="explore"
+            />
+          ))}
         </div>
 
         {/* Right: Sticky Info */}
@@ -76,7 +74,7 @@ export default function ProductDetail() {
 
             <div className="mb-8">
               <p className="text-xs font-sans tracking-[0.1em] text-gray-500 uppercase font-semibold mb-4">
-                COLOR: BLACK
+                COLOR: {product.colors?.length ? product.colors.join(", ") : "N/A"}
               </p>
             </div>
 

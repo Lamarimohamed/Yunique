@@ -6,25 +6,29 @@ import OrderModal from "../../components/admin/OrderModal"
 import { Link } from "react-router"
 import { supabase } from "../../lib/supabase"
 
-async function isAdminUser(userId: string, email?: string | null): Promise<boolean> {
-  try {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const role = sessionData.session?.user?.app_metadata?.role
-    if (role === "admin") return true
+const adminStatusCache = new Map<string, boolean>()
 
+async function isAdminUser(userId: string, appMetadataRole?: string): Promise<boolean> {
+  if (appMetadataRole === "admin") return true
+  const cached = adminStatusCache.get(userId)
+  if (cached !== undefined) return cached
+
+  try {
     const { data, error } = await supabase
       .from("admin_users")
-      .select("id, email")
+      .select("id")
       .eq("id", userId)
       .limit(1)
       .maybeSingle()
 
     if (error) {
       console.warn("admin_users table check failed (run SQL migration?)", error)
+      adminStatusCache.set(userId, false)
       return false
     }
-    if (!data) return false
-    return true
+    const isAdmin = Boolean(data)
+    adminStatusCache.set(userId, isAdmin)
+    return isAdmin
   } catch (e) {
     console.error("admin check error", e)
     return false
@@ -70,7 +74,7 @@ export default function AdminDashboard() {
       try {
         const { data } = await supabase.auth.getSession()
         const u = data.session?.user
-        if (u && (await isAdminUser(u.id, u.email))) {
+        if (u && (await isAdminUser(u.id, u.app_metadata?.role))) {
           if (!cancelled) setIsAuthenticated(true)
         }
       } catch (e) {
@@ -87,7 +91,7 @@ export default function AdminDashboard() {
         return
       }
       if (s?.user) {
-        const ok = await isAdminUser(s.user.id, s.user.email)
+        const ok = await isAdminUser(s.user.id, s.user.app_metadata?.role)
         setIsAuthenticated(ok)
         if (!ok) await supabase.auth.signOut()
       }
@@ -112,7 +116,7 @@ export default function AdminDashboard() {
       console.error("Login error:", error)
       setLoginError(error.message)
     } else if (data.user) {
-      const ok = await isAdminUser(data.user.id, data.user.email)
+      const ok = await isAdminUser(data.user.id, data.user.app_metadata?.role)
       if (!ok) {
         await supabase.auth.signOut()
         setLoginError("This account is not authorized as an admin.")
@@ -427,6 +431,17 @@ export default function AdminDashboard() {
                           className="text-xs font-semibold tracking-widest uppercase text-gray-500 hover:text-black underline underline-offset-4"
                         >
                           View Details
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete order ${order.id}?`)) {
+                              deleteOrder(order.id)
+                            }
+                          }}
+                          className="ml-4 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label={`Delete order ${order.id}`}
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>

@@ -15,6 +15,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
     name: "",
     price: "",
     image: "",
+    images: [] as string[],
+    colors: [] as string[],
+    colorInput: "",
     description: "",
     sizes: ["S", "M", "L"],
     isNew: false,
@@ -39,6 +42,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         name: product.name,
         price: product.price.toString(),
         image: product.image,
+        images: product.images?.length ? product.images : [product.image],
+        colors: product.colors || [],
+        colorInput: "",
         description: product.description,
         sizes: product.sizes,
         isNew: product.isNew || false,
@@ -50,6 +56,9 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
         name: "",
         price: "",
         image: "",
+        images: [],
+        colors: [],
+        colorInput: "",
         description: "",
         sizes: ["S", "M", "L"],
         isNew: false,
@@ -60,14 +69,27 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
   }, [product, isOpen])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    Promise.all(files.map(file => new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image: reader.result as string }))
-      }
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
       reader.readAsDataURL(file)
-    }
+    }))).then(uploadedImages => {
+      setFormData(prev => ({
+        ...prev,
+        image: prev.image || uploadedImages[0],
+        images: [...prev.images, ...uploadedImages],
+      }))
+    })
+  }
+
+  const addColor = () => {
+    const color = formData.colorInput.trim()
+    if (!color || formData.colors.includes(color)) return
+    setFormData(prev => ({ ...prev, colors: [...prev.colors, color], colorInput: "" }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -76,6 +98,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
       name: formData.name,
       price: parseInt(formData.price) || 0,
       image: formData.image,
+      images: formData.images.length ? formData.images : formData.image ? [formData.image] : [],
+      colors: formData.colors,
       description: formData.description,
       sizes: formData.sizes,
       isNew: formData.isNew,
@@ -141,24 +165,66 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
             </div>
             <div>
               <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
-                Image (Upload or URL)
+                Images (Upload or URL)
               </label>
               <div className="flex gap-2">
                 <input
                   type="url"
                   value={formData.image}
-                  onChange={e => setFormData({ ...formData, image: e.target.value })}
+                  onChange={e => setFormData({ ...formData, image: e.target.value, images: e.target.value ? [e.target.value, ...formData.images.slice(1)] : formData.images.slice(1) })}
                   placeholder="https://..."
                   className="flex-1 p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
                 />
                 <label className="bg-black text-white px-6 flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors text-xs font-semibold tracking-widest uppercase">
                   Upload
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
                 </label>
               </div>
-              {formData.image && (
-                <div className="mt-3 w-20 h-24 border border-[#E5E5E5] relative">
-                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+              {formData.images.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.images.map((image, index) => (
+                    <div key={`${image}-${index}`} className="w-20 h-24 border border-[#E5E5E5] relative">
+                      <img src={image} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
+                Colors
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.colorInput}
+                  onChange={e => setFormData({ ...formData, colorInput: e.target.value })}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      addColor()
+                    }
+                  }}
+                  placeholder="e.g. Black"
+                  className="flex-1 p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black transition-colors"
+                />
+                <button type="button" onClick={addColor} className="px-4 bg-black text-white text-xs font-semibold tracking-widest uppercase">
+                  Add
+                </button>
+              </div>
+              {formData.colors.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {formData.colors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, colors: prev.colors.filter(item => item !== color) }))}
+                      className="px-3 py-1 bg-black text-white text-xs uppercase tracking-wider"
+                      aria-label={`Remove ${color} color`}
+                    >
+                      {color} ×
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
