@@ -12,5 +12,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create and export the shared Supabase client instance
 export const supabase = createClient(
   supabaseUrl ?? 'https://your-project.supabase.co',
-  supabaseAnonKey ?? 'your-anon-key'
+  supabaseAnonKey ?? 'your-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  }
 );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useData, Product, Order } from "../../context/DataContext"
 import { Package, ShoppingBag, Plus, Edit2, Trash2, Download, TrendingUp, DollarSign } from "lucide-react"
 import ProductModal from "../../components/admin/ProductModal"
@@ -54,6 +54,11 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [orderNotification, setOrderNotification] = useState<Order | null>(null)
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission
+  )
+  const knownOrderIds = useRef<Set<string> | null>(null)
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -101,6 +106,62 @@ export default function AdminDashboard() {
       sub.subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      knownOrderIds.current = null
+      return
+    }
+
+    if (knownOrderIds.current === null) {
+      knownOrderIds.current = new Set(orders.map(order => order.id))
+    }
+
+    const channel = supabase
+      .channel("admin-order-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        payload => {
+          const newOrder = payload.new as Record<string, unknown>
+          const orderId = String(newOrder.id)
+          if (knownOrderIds.current?.has(orderId)) return
+
+          knownOrderIds.current?.add(orderId)
+          const notificationOrder: Order = {
+            id: orderId,
+            customerName: String(newOrder.customer_name ?? "New customer"),
+            phone: String(newOrder.phone ?? ""),
+            wilaya: String(newOrder.wilaya ?? ""),
+            commune: String(newOrder.commune ?? ""),
+            deliveryType: newOrder.delivery_type === "domicile" ? "domicile" : "stopdesk",
+            address: String(newOrder.address ?? ""),
+            items: Array.isArray(newOrder.items) ? newOrder.items : [],
+            total: Number(newOrder.total ?? 0),
+            status: "Pending",
+            date: String(newOrder.date ?? new Date().toISOString()),
+          }
+          setOrderNotification(notificationOrder)
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification("New Yunique order", {
+              body: `${notificationOrder.customerName} placed order ${notificationOrder.id}.`,
+              icon: "/favicon.jpg",
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [isAuthenticated, orders])
+
+  const requestNotificationPermission = async () => {
+    if (typeof Notification === "undefined") return
+    const permission = await Notification.requestPermission()
+    setNotificationPermission(permission)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -175,6 +236,14 @@ export default function AdminDashboard() {
   }
 
   // --- LOGIN SCREEN ---
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-[#F9F9F9] pt-24 flex items-center justify-center text-xs font-semibold tracking-widest uppercase text-gray-500">
+        Restoring admin session...
+      </div>
+    )
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#F9F9F9] pt-24 flex items-center justify-center p-6 text-black">
@@ -243,6 +312,35 @@ export default function AdminDashboard() {
   // --- DASHBOARD SCREEN ---
   return (
     <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12 text-black">
+      {orderNotification && (
+        <div className="fixed right-6 top-24 z-[110] w-[min(24rem,calc(100vw-3rem))] bg-black text-white p-5 shadow-2xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-widest uppercase">New order received</p>
+              <p className="mt-2 text-sm">{orderNotification.customerName} · {orderNotification.id}</p>
+              <p className="mt-1 text-xs text-gray-300">{orderNotification.total.toLocaleString()} DZD</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOrderNotification(null)}
+              className="text-gray-300 hover:text-white"
+              aria-label="Dismiss order notification"
+            >
+              ×
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("orders")
+              setOrderNotification(null)
+            }}
+            className="mt-4 border border-white px-3 py-2 text-[10px] font-semibold tracking-widest uppercase hover:bg-white hover:text-black"
+          >
+            View orders
+          </button>
+        </div>
+      )}
       <div className="max-w-[1440px] mx-auto px-6">
         <div className="flex justify-between items-end mb-8 border-b border-[#E5E5E5] pb-6">
           <div>
@@ -262,6 +360,15 @@ export default function AdminDashboard() {
           >
             Sign Out
           </button>
+          {notificationPermission === "default" && (
+            <button
+              type="button"
+              onClick={requestNotificationPermission}
+              className="mr-4 text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500"
+            >
+              Enable order notifications
+            </button>
+          )}
         </div>
 
         {/* Stats Row */}

@@ -105,6 +105,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     fetchData()
+
+    const ordersChannel = supabase
+      .channel("orders-data")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        payload => {
+          const o = payload.new as Record<string, unknown>
+          const newOrder: Order = {
+            id: String(o.id),
+            customerName: String(o.customer_name ?? ""),
+            phone: String(o.phone ?? ""),
+            wilaya: String(o.wilaya ?? ""),
+            commune: String(o.commune ?? ""),
+            deliveryType: o.delivery_type === "domicile" ? "domicile" : "stopdesk",
+            address: String(o.address ?? ""),
+            items: Array.isArray(o.items) ? o.items : [],
+            total: Number(o.total ?? 0),
+            status: o.status as Order["status"],
+            date: String(o.date ?? new Date().toISOString()),
+          }
+          setOrders(current => current.some(order => order.id === newOrder.id) ? current : [newOrder, ...current])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(ordersChannel)
+    }
   }, [])
 
   const addProduct = async (product: Omit<Product, "id">) => {
