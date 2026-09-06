@@ -10,6 +10,7 @@ export default function ProductDetail() {
   const product = products.find(p => p.id === id) || products[0] // Fallback for safety
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
   const { addToCart, openCart } = useCart()
 
@@ -28,12 +29,13 @@ export default function ProductDetail() {
   const images = product.images?.length ? product.images : [product.image]
 
   const handleAdd = () => {
-    if (!selectedSize) return
+    if (!selectedSize || (product.colors?.length > 0 && !selectedColor)) return
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       size: selectedSize,
+      color: selectedColor || undefined,
       quantity: 1,
       image: product.image
     })
@@ -72,11 +74,28 @@ export default function ProductDetail() {
               {product.price.toLocaleString()} DZD
             </p>
 
+            {product.colors?.length > 0 && (
             <div className="mb-8">
               <p className="text-xs font-sans tracking-[0.1em] text-gray-500 uppercase font-semibold mb-4">
-                COLOR: {product.colors?.length ? product.colors.join(", ") : "N/A"}
+                COLOR
               </p>
+              <div className="flex flex-wrap gap-2">
+                {product.colors.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-pressed={selectedColor === color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-3 text-xs uppercase tracking-widest border ${
+                      selectedColor === color ? "bg-black text-white border-black" : "border-[#E5E5E5] hover:border-black"
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
             </div>
+            )}
 
             <div className="mb-12">
               <div className="flex justify-between items-end mb-4">
@@ -111,10 +130,10 @@ export default function ProductDetail() {
 
             <button
               onClick={handleAdd}
-              disabled={!selectedSize}
+              disabled={!selectedSize || (product.colors?.length > 0 && !selectedColor)}
               aria-label={added ? "Added to bag" : "Add to bag"}
               className={`w-full py-5 text-sm font-sans font-semibold tracking-[0.2em] uppercase transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
-                !selectedSize
+                !selectedSize || (product.colors?.length > 0 && !selectedColor)
                   ? "bg-[#E5E5E5] text-gray-400 cursor-not-allowed"
                   : added
                     ? "bg-green-600 text-white"
@@ -129,9 +148,7 @@ export default function ProductDetail() {
                 <p className="text-black font-semibold uppercase tracking-widest mb-2">
                   DESCRIPTION
                 </p>
-                <p className="normal-case">
-                  {product.description}
-                </p>
+                <DescriptionContent description={product.description} />
               </div>
               <div>
                 <p className="text-black font-semibold uppercase tracking-widest mb-2">
@@ -147,5 +164,20 @@ export default function ProductDetail() {
         </div>
       </div>
     </main>
+  )
+}
+
+function DescriptionContent({ description }: { description: string }) {
+  const parts = description.split(/(<img data-description-image="[^"]+" alt="[^"]*" \/>)/g)
+  return (
+    <div className="normal-case space-y-3">
+      {parts.map((part, index) => {
+        const match = part.match(/^<img data-description-image="([^"]+)" alt="([^"]*)" \/>$/)
+        if (match) {
+          return <img key={index} src={match[1]} alt={match[2]} className="max-w-full h-auto" />
+        }
+        return part ? <span key={index} className="block whitespace-pre-wrap">{part}</span> : null
+      })}
+    </div>
   )
 }

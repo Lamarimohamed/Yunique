@@ -92,6 +92,20 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
     setFormData(prev => ({ ...prev, colors: [...prev.colors, color], colorInput: "" }))
   }
 
+  const handleDescriptionImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const image = String(reader.result)
+      setFormData(prev => ({
+        ...prev,
+        description: `${prev.description}${prev.description ? "\n" : ""}<img data-description-image="${image}" alt="Product detail" />`,
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave({
@@ -238,6 +252,10 @@ export default function ProductModal({ isOpen, onClose, onSave, product }: Produ
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                 className="w-full p-3 bg-[#F9F9F9] border border-[#E5E5E5] text-sm focus:outline-none focus:border-black min-h-[80px] transition-colors"
               />
+              <label className="inline-flex mt-2 bg-white border border-[#E5E5E5] px-4 py-2 cursor-pointer text-[10px] font-semibold tracking-widest uppercase hover:border-black">
+                Add image to description
+                <input type="file" accept="image/*" onChange={handleDescriptionImageUpload} className="hidden" />
+              </label>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

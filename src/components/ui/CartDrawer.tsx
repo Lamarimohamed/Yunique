@@ -58,7 +58,7 @@ export default function CartDrawer() {
               ) : (
                 <div className="space-y-6">
                   {items.map((item) => (
-                    <div key={`${item.id}-${item.size}`} className="flex gap-4">
+                    <div key={`${item.id}-${item.size}-${item.color || ""}`} className="flex gap-4">
                       <img
                         src={item.image}
                         alt={item.name}
@@ -71,7 +71,7 @@ export default function CartDrawer() {
                               {item.name}
                             </h3>
                             <button
-                              onClick={() => removeFromCart(item.id, item.size)}
+                              onClick={() => removeFromCart(item.id, item.size, item.color)}
                               className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                               aria-label="Remove item"
                             >
@@ -81,6 +81,11 @@ export default function CartDrawer() {
                           <p className="text-xs text-gray-500 font-sans tracking-widest mt-1">
                             SIZE: {item.size}
                           </p>
+                          {item.color && (
+                            <p className="text-xs text-gray-500 font-sans tracking-widest mt-1">
+                              COLOR: {item.color}
+                            </p>
+                          )}
                           <p className="text-xs text-gray-500 font-sans tracking-widest mt-1">
                             QTY: {item.quantity}
                           </p>

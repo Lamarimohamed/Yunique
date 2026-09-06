@@ -508,7 +508,7 @@ export default function Checkout() {
 
             <div className="space-y-6 max-h-[40vh] overflow-y-auto pr-2 mb-6">
               {items.map((item) => (
-                <div key={`${item.id}-${item.size}`} className="flex gap-4">
+                <div key={`${item.id}-${item.size}-${item.color || ""}`} className="flex gap-4">
                   <div className="relative">
                     <img
                       src={item.image}
@@ -526,6 +526,11 @@ export default function Checkout() {
                     <p className="text-[10px] text-gray-500 font-sans tracking-widest mt-1">
                       SIZE: {item.size}
                     </p>
+                    {item.color && (
+                      <p className="text-[10px] text-gray-500 font-sans tracking-widest mt-1">
+                        COLOR: {item.color}
+                      </p>
+                    )}
                   </div>
                   <p className="text-xs font-semibold tracking-widest self-center text-black">
                     {(item.price * item.quantity).toLocaleString()} DZD

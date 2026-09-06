@@ -79,9 +79,8 @@ export default function Navbar() {
           className="whitespace-nowrap"
           aria-hidden="true"
         >
-          NEW DROP / 01 — NOW LIVE &nbsp;&nbsp;&nbsp;&nbsp; NEW DROP / 01 — NOW
-          LIVE &nbsp;&nbsp;&nbsp;&nbsp; NEW DROP / 01 — NOW LIVE
-          &nbsp;&nbsp;&nbsp;&nbsp; NEW DROP / 01 — NOW LIVE
+          YUINIQUE 69 DROP ! &nbsp;&nbsp;&nbsp;&nbsp; YUINIQUE 69 DROP !
+          &nbsp;&nbsp;&nbsp;&nbsp; YUINIQUE 69 DROP !
         </motion.div>
       </div>
 

@@ -111,7 +111,7 @@ export default function OrderModal({ isOpen, onClose, order }: OrderModalProps) 
                         {item.name}
                       </h4>
                       <p className="text-[10px] text-gray-500 font-sans tracking-widest mt-1">
-                        SIZE: {item.size} | QTY: {item.quantity}
+                        SIZE: {item.size}{item.color ? ` | COLOR: ${item.color}` : ""} | QTY: {item.quantity}
                       </p>
                       <p className="text-xs font-semibold tracking-widest mt-2">
                         {(item.price * item.quantity).toLocaleString()} DZD

@@ -5,6 +5,7 @@ export type CartItem = {
   name: string
   price: number
   size: string
+  color?: string
   quantity: number
   image: string
 }
@@ -12,7 +13,7 @@ export type CartItem = {
 type CartContextType = {
   items: CartItem[]
   addToCart: (item: CartItem) => void
-  removeFromCart: (id: string, size: string) => void
+  removeFromCart: (id: string, size: string, color?: string) => void
   cartCount: number
   isCartOpen: boolean
   openCart: () => void
@@ -33,11 +34,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (item: CartItem) => {
     setItems((current) => {
       const existing = current.find(
-        (i) => i.id === item.id && i.size === item.size
+        (i) => i.id === item.id && i.size === item.size && i.color === item.color
       )
       if (existing) {
         return current.map((i) =>
-          i.id === item.id && i.size === item.size
+          i.id === item.id && i.size === item.size && i.color === item.color
             ? { ...i, quantity: i.quantity + item.quantity }
             : i
         )
@@ -46,9 +47,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const removeFromCart = (id: string, size: string) => {
+  const removeFromCart = (id: string, size: string, color?: string) => {
     setItems((current) =>
-      current.filter((i) => !(i.id === id && i.size === size))
+      current.filter((i) => !(i.id === id && i.size === size && i.color === color))
     )
   }
 
