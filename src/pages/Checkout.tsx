@@ -282,7 +282,7 @@ export default function Checkout() {
                         name="deliveryType"
                         value="stopdesk"
                         checked={formData.deliveryType === "stopdesk"}
-                        onChange={() => setFormData({ ...formData, deliveryType: "stopdesk" })}
+                        onChange={() => setFormData({ ...formData, deliveryType: "stopdesk", commune: "" })}
                         className="h-4 w-4 text-black border-gray-300 focus:ring-black accent-black"
                       />
                       <Building2 size={20} strokeWidth={1.5} className="text-gray-400" />
@@ -339,6 +339,7 @@ export default function Checkout() {
                         ))}
                       </select>
                     </div>
+                    {formData.deliveryType === "domicile" && (
                     <div>
                       <label className="block text-[10px] font-semibold tracking-widest uppercase text-gray-500 mb-2">
                         Commune
@@ -358,6 +359,7 @@ export default function Checkout() {
                         ))}
                       </select>
                     </div>
+                    )}
 
                     {formData.deliveryType === "domicile" && (
                       <div className="md:col-span-2">
@@ -405,10 +407,10 @@ export default function Checkout() {
                       />
                       <div className="ml-4">
                         <span className="block text-sm font-semibold tracking-widest uppercase">
-                          Credit Card (Stripe)
+                          Credit Card (Stripe) — Worldwide
                         </span>
                         <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
-                          Pay securely with your credit card
+                          Pay securely worldwide with your credit card
                         </span>
                       </div>
                     </div>
@@ -472,10 +474,10 @@ export default function Checkout() {
                       />
                       <div className="ml-4">
                         <span className="block text-sm font-semibold tracking-widest uppercase">
-                          Cash on Delivery
+                          Cash on Delivery — DZ Only
                         </span>
                         <span className="block text-[10px] text-gray-500 tracking-wide mt-1">
-                          Pay with cash when your order arrives
+                          Pay with cash when your order arrives in Algeria
                         </span>
                       </div>
                     </div>
