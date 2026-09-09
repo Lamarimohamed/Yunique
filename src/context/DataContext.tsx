@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react"
 import { supabase } from "../lib/supabase"
 
 export type Product = {
@@ -32,6 +32,7 @@ export type Order = {
 type DataContextType = {
   products: Product[]
   orders: Order[]
+  loadOrders: () => Promise<Order[]>
   addProduct: (product: Omit<Product, "id">) => Promise<void>
   updateProduct: (id: string, product: Omit<Product, "id">) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -42,23 +43,25 @@ type DataContextType = {
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
-export function DataProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoaded, setIsLoaded] = useState(false)
+const PRODUCT_COLUMNS = "id,name,price,image,images,colors,description,sizes,is_new,collection,is_draft"
+const ORDER_COLUMNS = "id,customer_name,phone,wilaya,commune,delivery_type,address,items,total,status,date"
+const MAX_PRODUCTS = 500
+const MAX_ORDERS = 100
+let productsCache: Product[] | null = null
+let productsRequest: Promise<Product[]> | null = null
+let ordersCache: Order[] | null = null
 
-  // Fetch data from Supabase on mount
-  useEffect(() => {
-    async function fetchData() {
-      // 1. Fetch Products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (productsData && !productsError) {
-        // Map database fields (snake_case) to frontend fields (camelCase)
-        const mappedProducts: Product[] = productsData.map(p => ({
+async function fetchProducts(): Promise<Product[]> {
+  if (productsCache) return productsCache
+  if (!productsRequest) {
+    productsRequest = supabase
+      .from("products")
+      .select(PRODUCT_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(MAX_PRODUCTS)
+      .then(({ data, error }) => {
+        if (error) throw error
+        const mappedProducts: Product[] = (data ?? []).map(p => ({
           id: p.id,
           name: p.name,
           price: p.price,
@@ -71,69 +74,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
           collection: p.collection,
           isDraft: p.is_draft
         }))
-        setProducts(mappedProducts)
-      } else if (productsError) {
-        console.error("Error fetching products:", productsError)
-      }
+        productsCache = mappedProducts
+        return mappedProducts
+      })
+      .finally(() => {
+        productsRequest = null
+      })
+  }
+  return productsRequest
+}
 
-      // 2. Fetch Orders
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('date', { ascending: false })
+async function fetchOrders(): Promise<Order[]> {
+  if (ordersCache) return ordersCache
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ORDER_COLUMNS)
+    .order("date", { ascending: false })
+    .limit(MAX_ORDERS)
 
-      if (ordersData && !ordersError) {
-        const mappedOrders: Order[] = ordersData.map(o => ({
-          id: o.id,
-          customerName: o.customer_name,
-          phone: o.phone,
-          wilaya: o.wilaya,
-          commune: o.commune,
-          deliveryType: o.delivery_type,
-          address: o.address,
-          items: o.items,
-          total: o.total,
-          status: o.status,
-          date: o.date
-        }))
-        setOrders(mappedOrders)
-      } else if (ordersError) {
-        console.error("Error fetching orders:", ordersError)
-      }
+  if (error) throw error
+  const mappedOrders: Order[] = (data ?? []).map(o => ({
+    id: o.id,
+    customerName: o.customer_name,
+    phone: o.phone,
+    wilaya: o.wilaya,
+    commune: o.commune,
+    deliveryType: o.delivery_type,
+    address: o.address,
+    items: o.items,
+    total: o.total,
+    status: o.status,
+    date: o.date
+  }))
+  ordersCache = mappedOrders
+  return mappedOrders
+}
 
-      setIsLoaded(true)
-    }
+export function DataProvider({ children }: { children: ReactNode }) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoaded, setIsLoaded] = useState(false)
 
-    fetchData()
+  useEffect(() => {
+    fetchProducts()
+      .then(setProducts)
+      .catch(error => console.error("Error fetching products:", error))
+      .finally(() => setIsLoaded(true))
+  }, [])
 
-    const ordersChannel = supabase
-      .channel("orders-data")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "orders" },
-        payload => {
-          const o = payload.new as Record<string, unknown>
-          const newOrder: Order = {
-            id: String(o.id),
-            customerName: String(o.customer_name ?? ""),
-            phone: String(o.phone ?? ""),
-            wilaya: String(o.wilaya ?? ""),
-            commune: String(o.commune ?? ""),
-            deliveryType: o.delivery_type === "domicile" ? "domicile" : "stopdesk",
-            address: String(o.address ?? ""),
-            items: Array.isArray(o.items) ? o.items : [],
-            total: Number(o.total ?? 0),
-            status: o.status as Order["status"],
-            date: String(o.date ?? new Date().toISOString()),
-          }
-          setOrders(current => current.some(order => order.id === newOrder.id) ? current : [newOrder, ...current])
-        }
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(ordersChannel)
-    }
+  const loadOrders = useCallback(async () => {
+    const loadedOrders = await fetchOrders()
+    setOrders(loadedOrders)
+    return loadedOrders
   }, [])
 
   const addProduct = async (product: Omit<Product, "id">) => {
@@ -154,13 +146,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from('products')
       .insert([dbProduct])
-      .select()
+      .select(PRODUCT_COLUMNS)
       .single()
       
     if (data && !error) {
       const newProduct: Product = { ...product, id: data.id }
       // Update UI
       setProducts(prev => [newProduct, ...prev])
+      productsCache = null
     } else {
       console.error("Error adding product:", error)
     }
@@ -190,6 +183,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error updating product:", error)
+    } else {
+      productsCache = null
     }
   }
 
@@ -204,6 +199,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error deleting product:", error)
+    } else {
+      productsCache = null
     }
   }
 
@@ -240,6 +237,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error adding order:", error)
+    } else {
+      ordersCache = null
     }
   }
 
@@ -254,6 +253,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error updating order status:", error)
+    } else {
+      ordersCache = null
     }
   }
 
@@ -268,11 +269,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error deleting order:", error)
+    } else {
+      ordersCache = null
     }
   }
 
   return (
-    <DataContext.Provider value={{ products, orders, addProduct, updateProduct, deleteProduct, addOrder, updateOrderStatus, deleteOrder }}>
+    <DataContext.Provider value={{ products, orders, loadOrders, addProduct, updateProduct, deleteProduct, addOrder, updateOrderStatus, deleteOrder }}>
       {children}
     </DataContext.Provider>
   )

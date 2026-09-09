@@ -44,7 +44,7 @@ const STATUSES: { value: Order["status"]; label: string; cls: string }[] = [
 const statusCls = (s: Order["status"]) => STATUSES.find(x => x.value === s)?.cls ?? STATUSES[0].cls
 
 export default function AdminDashboard() {
-  const { products, orders, addProduct, updateProduct, deleteProduct, updateOrderStatus, deleteOrder } = useData()
+  const { products, orders, loadOrders, addProduct, updateProduct, deleteProduct, updateOrderStatus, deleteOrder } = useData()
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products")
   
   // Auth state
@@ -113,49 +113,61 @@ export default function AdminDashboard() {
       return
     }
 
-    if (knownOrderIds.current === null) {
-      knownOrderIds.current = new Set(orders.map(order => order.id))
+    let cancelled = false
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const initializeOrderNotifications = async () => {
+      try {
+        const loadedOrders = await loadOrders()
+        if (cancelled) return
+        knownOrderIds.current = new Set(loadedOrders.map(order => order.id))
+
+        channel = supabase
+          .channel("admin-order-notifications")
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "orders" },
+            payload => {
+              const newOrder = payload.new as Record<string, unknown>
+              const orderId = String(newOrder.id)
+              if (knownOrderIds.current?.has(orderId)) return
+
+              knownOrderIds.current?.add(orderId)
+              const notificationOrder: Order = {
+                id: orderId,
+                customerName: String(newOrder.customer_name ?? "New customer"),
+                phone: String(newOrder.phone ?? ""),
+                wilaya: String(newOrder.wilaya ?? ""),
+                commune: String(newOrder.commune ?? ""),
+                deliveryType: newOrder.delivery_type === "domicile" ? "domicile" : "stopdesk",
+                address: String(newOrder.address ?? ""),
+                items: Array.isArray(newOrder.items) ? newOrder.items : [],
+                total: Number(newOrder.total ?? 0),
+                status: "Pending",
+                date: String(newOrder.date ?? new Date().toISOString()),
+              }
+              setOrderNotification(notificationOrder)
+              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                new Notification("New Yunique order", {
+                  body: `${notificationOrder.customerName} placed order ${notificationOrder.id}.`,
+                  icon: "/favicon.jpg",
+                })
+              }
+            }
+          )
+          .subscribe()
+      } catch (error) {
+        console.error("Error loading admin orders:", error)
+      }
     }
 
-    const channel = supabase
-      .channel("admin-order-notifications")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "orders" },
-        payload => {
-          const newOrder = payload.new as Record<string, unknown>
-          const orderId = String(newOrder.id)
-          if (knownOrderIds.current?.has(orderId)) return
-
-          knownOrderIds.current?.add(orderId)
-          const notificationOrder: Order = {
-            id: orderId,
-            customerName: String(newOrder.customer_name ?? "New customer"),
-            phone: String(newOrder.phone ?? ""),
-            wilaya: String(newOrder.wilaya ?? ""),
-            commune: String(newOrder.commune ?? ""),
-            deliveryType: newOrder.delivery_type === "domicile" ? "domicile" : "stopdesk",
-            address: String(newOrder.address ?? ""),
-            items: Array.isArray(newOrder.items) ? newOrder.items : [],
-            total: Number(newOrder.total ?? 0),
-            status: "Pending",
-            date: String(newOrder.date ?? new Date().toISOString()),
-          }
-          setOrderNotification(notificationOrder)
-          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification("New Yunique order", {
-              body: `${notificationOrder.customerName} placed order ${notificationOrder.id}.`,
-              icon: "/favicon.jpg",
-            })
-          }
-        }
-      )
-      .subscribe()
+    void initializeOrderNotifications()
 
     return () => {
-      void supabase.removeChannel(channel)
+      cancelled = true
+      if (channel) void supabase.removeChannel(channel)
     }
-  }, [isAuthenticated, orders])
+  }, [isAuthenticated, loadOrders])
 
   const requestNotificationPermission = async () => {
     if (typeof Notification === "undefined") return

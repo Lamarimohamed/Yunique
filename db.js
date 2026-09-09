@@ -8,7 +8,7 @@ const supabase = createClient(
 // Test the connection
 supabase
   .from('products')
-  .select('*')
+  .select('id')
   .limit(1)
   .then(({ data, error }) => {
     if (error) console.error('Connection error:', error);
