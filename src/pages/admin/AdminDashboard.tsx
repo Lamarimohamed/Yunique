@@ -445,8 +445,8 @@ export default function AdminDashboard() {
               </button>
             </div>
             
-            <div className="bg-white border border-[#E5E5E5] overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left border-collapse">
+            <div className="bg-white border border-[#E5E5E5] overflow-hidden">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F9F9F9]">
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Image</th>
@@ -505,8 +505,8 @@ export default function AdminDashboard() {
                 <Download size={16} /> Export CSV
               </button>
             </div>
-            <div className="bg-white border border-[#E5E5E5] overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white border border-[#E5E5E5] overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F9F9F9]">
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Order ID</th>
