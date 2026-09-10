@@ -32,7 +32,7 @@ export type Order = {
 type DataContextType = {
   products: Product[]
   orders: Order[]
-  loadOrders: () => Promise<Order[]>
+  loadOrders: (forceRefresh?: boolean) => Promise<Order[]>
   addProduct: (product: Omit<Product, "id">) => Promise<void>
   updateProduct: (id: string, product: Omit<Product, "id">) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -84,8 +84,8 @@ async function fetchProducts(): Promise<Product[]> {
   return productsRequest
 }
 
-async function fetchOrders(): Promise<Order[]> {
-  if (ordersCache) return ordersCache
+async function fetchOrders(forceRefresh = false): Promise<Order[]> {
+  if (!forceRefresh && ordersCache) return ordersCache
   const { data, error } = await supabase
     .from("orders")
     .select(ORDER_COLUMNS)
@@ -122,8 +122,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoaded(true))
   }, [])
 
-  const loadOrders = useCallback(async () => {
-    const loadedOrders = await fetchOrders()
+  const loadOrders = useCallback(async (forceRefresh = false) => {
+    const loadedOrders = await fetchOrders(forceRefresh)
     setOrders(loadedOrders)
     return loadedOrders
   }, [])

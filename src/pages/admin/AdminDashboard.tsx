@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
     const initializeOrderNotifications = async () => {
       try {
-        const loadedOrders = await loadOrders()
+        const loadedOrders = await loadOrders(true)
         if (cancelled) return
         knownOrderIds.current = new Set(loadedOrders.map(order => order.id))
 
@@ -147,6 +147,7 @@ export default function AdminDashboard() {
                 date: String(newOrder.date ?? new Date().toISOString()),
               }
               setOrderNotification(notificationOrder)
+              void loadOrders(true)
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                 new Notification("New Yunique order", {
                   body: `${notificationOrder.customerName} placed order ${notificationOrder.id}.`,
@@ -504,8 +505,8 @@ export default function AdminDashboard() {
                 <Download size={16} /> Export CSV
               </button>
             </div>
-            <div className="bg-white border border-[#E5E5E5] overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white border border-[#E5E5E5] overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F9F9F9]">
                     <th className="p-4 text-[10px] font-semibold tracking-widest uppercase text-gray-500">Order ID</th>
@@ -567,7 +568,7 @@ export default function AdminDashboard() {
                   ))}
                   {orders.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-sm font-semibold tracking-widest text-gray-500 uppercase">
+                      <td colSpan={6} className="p-8 text-center text-sm font-semibold tracking-widest text-gray-500 uppercase">
                         No orders yet
                       </td>
                     </tr>
