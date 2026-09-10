@@ -67,10 +67,26 @@ export default function AdminDashboard() {
   // Order Modal state
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const defaultDocumentTitle = useRef(typeof document === "undefined" ? "Yunique" : document.title)
 
   const totalOrders = orders.length
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
+
+  const notifyAboutOrder = (incomingOrder: Order) => {
+    setOrderNotification(incomingOrder)
+
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      new Notification("New Yunique order", {
+        body: `${incomingOrder.customerName} placed order ${incomingOrder.id}.`,
+        icon: "/favicon.jpg",
+      })
+    }
+
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate([120, 80, 120])
+    }
+  }
 
   // ⭐ Persist admin login across page refreshes
   useEffect(() => {
@@ -115,12 +131,32 @@ export default function AdminDashboard() {
 
     let cancelled = false
     let channel: ReturnType<typeof supabase.channel> | null = null
+    let pollingInterval: ReturnType<typeof setInterval> | null = null
 
     const initializeOrderNotifications = async () => {
       try {
         const loadedOrders = await loadOrders(true)
         if (cancelled) return
         knownOrderIds.current = new Set(loadedOrders.map(order => order.id))
+
+        const pollOrdersForNewItems = async () => {
+          const latestOrders = await loadOrders(true)
+          if (cancelled || !knownOrderIds.current) return
+
+          let latestNewOrder: Order | null = null
+          for (let i = latestOrders.length - 1; i >= 0; i -= 1) {
+            const order = latestOrders[i]
+            if (knownOrderIds.current.has(order.id)) continue
+            knownOrderIds.current.add(order.id)
+            latestNewOrder = order
+          }
+
+          if (latestNewOrder) notifyAboutOrder(latestNewOrder)
+        }
+
+        pollingInterval = setInterval(() => {
+          void pollOrdersForNewItems()
+        }, 20000)
 
         channel = supabase
           .channel("admin-order-notifications")
@@ -146,14 +182,8 @@ export default function AdminDashboard() {
                 status: "Pending",
                 date: String(newOrder.date ?? new Date().toISOString()),
               }
-              setOrderNotification(notificationOrder)
+              notifyAboutOrder(notificationOrder)
               void loadOrders(true)
-              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification("New Yunique order", {
-                  body: `${notificationOrder.customerName} placed order ${notificationOrder.id}.`,
-                  icon: "/favicon.jpg",
-                })
-              }
             }
           )
           .subscribe()
@@ -167,8 +197,18 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true
       if (channel) void supabase.removeChannel(channel)
+      if (pollingInterval) clearInterval(pollingInterval)
     }
   }, [isAuthenticated, loadOrders])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    if (orderNotification) {
+      document.title = `New order • ${orderNotification.id}`
+      return
+    }
+    document.title = defaultDocumentTitle.current
+  }, [orderNotification])
 
   const requestNotificationPermission = async () => {
     if (typeof Notification === "undefined") return
@@ -326,7 +366,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#F9F9F9] pt-24 pb-12 text-black">
       {orderNotification && (
-        <div className="fixed right-6 top-24 z-[110] w-[min(24rem,calc(100vw-3rem))] bg-black text-white p-5 shadow-2xl">
+        <div className="fixed left-3 right-3 top-20 z-[110] w-auto bg-black text-white p-4 shadow-2xl sm:left-auto sm:right-6 sm:top-24 sm:w-[min(24rem,calc(100vw-3rem))] sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase">New order received</p>
@@ -354,34 +394,36 @@ export default function AdminDashboard() {
           </button>
         </div>
       )}
-      <div className="max-w-[1440px] mx-auto px-6">
-        <div className="flex justify-between items-end mb-8 border-b border-[#E5E5E5] pb-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
+        <div className="mb-8 flex flex-col gap-4 border-b border-[#E5E5E5] pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-display tracking-widest uppercase text-black">
+            <h1 className="text-2xl font-display tracking-widest uppercase text-black sm:text-3xl">
               Admin Portal
             </h1>
-            <p className="text-sm font-sans tracking-wide text-gray-500 mt-2">
+            <p className="mt-2 text-xs font-sans tracking-wide text-gray-500 sm:text-sm">
               Manage your products and orders
             </p>
           </div>
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut()
-              setIsAuthenticated(false)
-            }} 
-            className="text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500 transition-colors border border-black px-4 py-2 hover:border-gray-500"
-          >
-            Sign Out
-          </button>
-          {notificationPermission === "default" && (
+          <div className="flex flex-col items-start gap-3 sm:items-end">
+            {notificationPermission === "default" && (
+              <button
+                type="button"
+                onClick={requestNotificationPermission}
+                className="text-[10px] font-semibold tracking-widest uppercase text-black underline underline-offset-4 hover:text-gray-500 sm:text-xs"
+              >
+                Enable order notifications
+              </button>
+            )}
             <button
-              type="button"
-              onClick={requestNotificationPermission}
-              className="mr-4 text-xs font-semibold tracking-widest uppercase text-black hover:text-gray-500"
+              onClick={async () => {
+                await supabase.auth.signOut()
+                setIsAuthenticated(false)
+              }}
+              className="border border-black px-4 py-2 text-xs font-semibold tracking-widest uppercase text-black transition-colors hover:border-gray-500 hover:text-gray-500"
             >
-              Enable order notifications
+              Sign Out
             </button>
-          )}
+          </div>
         </div>
 
         {/* Stats Row */}
@@ -409,29 +451,31 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex space-x-8 mb-8 border-b border-[#E5E5E5]">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`pb-4 text-sm font-semibold tracking-widest uppercase transition-colors relative ${
-              activeTab === "products" ? "text-black" : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <span className="flex items-center gap-2"><Package size={16} /> Products</span>
-            {activeTab === "products" && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`pb-4 text-sm font-semibold tracking-widest uppercase transition-colors relative ${
-              activeTab === "orders" ? "text-black" : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <span className="flex items-center gap-2"><ShoppingBag size={16} /> Orders</span>
-            {activeTab === "orders" && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
-            )}
-          </button>
+        <div className="mb-8 border-b border-[#E5E5E5]">
+          <div className="flex gap-6 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`relative pb-4 text-xs font-semibold tracking-widest uppercase transition-colors sm:text-sm ${
+                activeTab === "products" ? "text-black" : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <span className="flex items-center gap-2"><Package size={16} /> Products</span>
+              {activeTab === "products" && (
+                <span className="absolute bottom-0 left-0 h-0.5 w-full bg-black" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("orders")}
+              className={`relative pb-4 text-xs font-semibold tracking-widest uppercase transition-colors sm:text-sm ${
+                activeTab === "orders" ? "text-black" : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <span className="flex items-center gap-2"><ShoppingBag size={16} /> Orders</span>
+              {activeTab === "orders" && (
+                <span className="absolute bottom-0 left-0 h-0.5 w-full bg-black" />
+              )}
+            </button>
+          </div>
         </div>
 
         {activeTab === "products" && (
@@ -445,7 +489,35 @@ export default function AdminDashboard() {
               </button>
             </div>
             
-            <div className="bg-white border border-[#E5E5E5] overflow-hidden">
+            <div className="space-y-4 md:hidden">
+              {products.map(product => (
+                <div key={product.id} className="border border-[#E5E5E5] bg-white p-4">
+                  <div className="flex gap-3">
+                    <img src={product.image} alt={product.name} className="h-20 w-16 bg-[#F2F2F0] object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold uppercase tracking-wider">{product.name}</p>
+                      <p className="mt-1 text-xs font-sans tracking-widest">{product.price.toLocaleString()} DZD</p>
+                      <p className="mt-1 text-[11px] text-gray-500">{product.sizes.join(", ")}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-4">
+                    <button onClick={() => openEditModal(product)} className="text-xs font-semibold uppercase tracking-widest text-gray-500 underline underline-offset-4">
+                      Edit
+                    </button>
+                    <button onClick={() => deleteProduct(product.id)} className="text-xs font-semibold uppercase tracking-widest text-red-600">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {products.length === 0 && (
+                <div className="border border-[#E5E5E5] bg-white p-8 text-center text-sm font-semibold tracking-widest uppercase text-gray-500">
+                  No products found
+                </div>
+              )}
+            </div>
+
+            <div className="hidden overflow-hidden border border-[#E5E5E5] bg-white md:block">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F9F9F9]">
@@ -505,7 +577,62 @@ export default function AdminDashboard() {
                 <Download size={16} /> Export CSV
               </button>
             </div>
-            <div className="bg-white border border-[#E5E5E5] overflow-x-auto">
+            <div className="space-y-4 md:hidden">
+              {orders.map(order => (
+                <div key={order.id} className="border border-[#E5E5E5] bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold tracking-widest">{order.id}</p>
+                      <p className="mt-1 text-sm font-semibold uppercase">{order.customerName}</p>
+                      <p className="mt-1 text-xs text-gray-500">{order.phone} · {order.wilaya}</p>
+                    </div>
+                    <p className="shrink-0 text-[11px] text-gray-500">{new Date(order.date).toLocaleDateString()}</p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-sm font-sans tracking-widest">{order.total.toLocaleString()} DZD</p>
+                    <select
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
+                      className={`p-2 text-[10px] font-semibold uppercase tracking-widest border focus:outline-none ${
+                        statusCls(order.status)
+                      }`}
+                    >
+                      {STATUSES.map(status => (
+                        <option key={status.value} value={status.value}>{status.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mt-3 flex justify-end gap-4">
+                    <button
+                      onClick={() => {
+                        setSelectedOrder(order)
+                        setIsOrderModalOpen(true)
+                      }}
+                      className="text-xs font-semibold tracking-widest uppercase text-gray-500 underline underline-offset-4"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete order ${order.id}?`)) {
+                          deleteOrder(order.id)
+                        }
+                      }}
+                      className="text-xs font-semibold tracking-widest uppercase text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {orders.length === 0 && (
+                <div className="border border-[#E5E5E5] bg-white p-8 text-center text-sm font-semibold tracking-widest text-gray-500 uppercase">
+                  No orders yet
+                </div>
+              )}
+            </div>
+
+            <div className="hidden overflow-x-auto border border-[#E5E5E5] bg-white md:block">
               <table className="w-full min-w-[760px] text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] bg-[#F9F9F9]">
