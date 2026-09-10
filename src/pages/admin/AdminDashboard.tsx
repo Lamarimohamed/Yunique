@@ -76,12 +76,37 @@ export default function AdminDashboard() {
   const notifyAboutOrder = (incomingOrder: Order) => {
     setOrderNotification(incomingOrder)
 
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification("New Yunique order", {
-        body: `${incomingOrder.customerName} placed order ${incomingOrder.id}.`,
-        icon: "/favicon.jpg",
-      })
+    const notificationTitle = "New Yunique order"
+    const notificationOptions: NotificationOptions = {
+      body: `${incomingOrder.customerName} placed order ${incomingOrder.id}.`,
+      icon: "/favicon.jpg",
+      tag: `order-${incomingOrder.id}`,
+      renotify: true,
     }
+
+    const notifyWithFallback = async () => {
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") return
+
+      try {
+        if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration()
+          if (registration) {
+            await registration.showNotification(notificationTitle, notificationOptions)
+            return
+          }
+        }
+      } catch (error) {
+        console.warn("Service worker notification failed, falling back to page notification.", error)
+      }
+
+      try {
+        new Notification(notificationTitle, notificationOptions)
+      } catch (error) {
+        console.warn("Page notification failed.", error)
+      }
+    }
+
+    void notifyWithFallback()
 
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
       navigator.vibrate([120, 80, 120])
@@ -209,6 +234,23 @@ export default function AdminDashboard() {
     }
     document.title = defaultDocumentTitle.current
   }, [orderNotification])
+
+  useEffect(() => {
+    if (typeof Notification === "undefined" || typeof window === "undefined" || typeof document === "undefined") return
+
+    const syncPermission = () => {
+      setNotificationPermission(Notification.permission)
+    }
+
+    syncPermission()
+    window.addEventListener("focus", syncPermission)
+    document.addEventListener("visibilitychange", syncPermission)
+
+    return () => {
+      window.removeEventListener("focus", syncPermission)
+      document.removeEventListener("visibilitychange", syncPermission)
+    }
+  }, [])
 
   const requestNotificationPermission = async () => {
     if (typeof Notification === "undefined") return
@@ -405,13 +447,13 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex flex-col items-start gap-3 sm:items-end">
-            {notificationPermission === "default" && (
+            {notificationPermission !== "granted" && notificationPermission !== "unsupported" && (
               <button
                 type="button"
                 onClick={requestNotificationPermission}
                 className="text-[10px] font-semibold tracking-widest uppercase text-black underline underline-offset-4 hover:text-gray-500 sm:text-xs"
               >
-                Enable order notifications
+                {notificationPermission === "denied" ? "Retry order notifications permission" : "Enable order notifications"}
               </button>
             )}
             <button
