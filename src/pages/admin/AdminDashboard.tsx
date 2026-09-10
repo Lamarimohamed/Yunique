@@ -447,15 +447,20 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex flex-col items-start gap-3 sm:items-end">
-            {notificationPermission !== "granted" && notificationPermission !== "unsupported" && (
-              <button
-                type="button"
-                onClick={requestNotificationPermission}
-                className="text-[10px] font-semibold tracking-widest uppercase text-black underline underline-offset-4 hover:text-gray-500 sm:text-xs"
-              >
-                {notificationPermission === "denied" ? "Retry order notifications permission" : "Enable order notifications"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={requestNotificationPermission}
+              disabled={notificationPermission === "unsupported"}
+              className="text-[10px] font-semibold tracking-widest uppercase text-black underline underline-offset-4 hover:text-gray-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-xs"
+            >
+              {notificationPermission === "granted"
+                ? "Order notifications enabled"
+                : notificationPermission === "denied"
+                  ? "Retry order notifications permission"
+                  : notificationPermission === "unsupported"
+                    ? "Order notifications not supported"
+                    : "Enable order notifications"}
+            </button>
             <button
               onClick={async () => {
                 await supabase.auth.signOut()
