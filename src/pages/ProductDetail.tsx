@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { useCart } from "../context/CartContext"
 import { useData } from "../context/DataContext"
@@ -13,6 +13,16 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
   const { addToCart, openCart } = useCart()
+
+  useEffect(() => {
+    if (!product) return
+    window.fbq?.("track", "ViewContent", {
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.price,
+      currency: "DZD"
+    })
+  }, [product])
 
   if (!product) {
     return (
@@ -38,6 +48,11 @@ export default function ProductDetail() {
       color: selectedColor || undefined,
       quantity: 1,
       image: product.image
+    })
+    window.fbq?.("track", "AddToCart", {
+      content_ids: [product.id],
+      value: product.price,
+      currency: "DZD"
     })
     setAdded(true)
     openCart()

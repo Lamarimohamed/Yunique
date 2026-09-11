@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "../context/CartContext"
 import { useData } from "../context/DataContext"
@@ -25,6 +25,10 @@ export default function Checkout() {
     postalCode: "",
     email: ""
   })
+
+  useEffect(() => {
+    window.fbq?.("track", "InitiateCheckout")
+  }, [])
 
   const communes = useMemo(
     () => getCommunesByWilaya(formData.wilayaCode),
@@ -53,34 +57,39 @@ export default function Checkout() {
     setIsProcessing(true)
     const wilaya = WILAYAS.find(w => w.code === formData.wilayaCode)
     // Mock processing delay
-    setTimeout(() => {
-      addOrder(
-        isStripe
-          ? {
-              customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-              phone: formData.phone,
-              email: formData.email,
-              wilaya: "",
-              commune: "",
-              deliveryType: "domicile",
-              address: `${formData.address}${formData.postalCode ? ", " + formData.postalCode : ""}`,
-              items: items,
-              total: total
-            }
-          : {
-              customerName: formData.fullName,
-              phone: formData.phone,
-              wilaya: wilaya?.name ?? "",
-              commune: formData.commune,
-              deliveryType: formData.deliveryType,
-              address: formData.deliveryType === "domicile" ? formData.address : "",
-              items: items,
-              total: total
-            }
-      )
-      clearCart()
-      setIsProcessing(false)
-      setIsSuccess(true)
+    setTimeout(async () => {
+      try {
+        await addOrder(
+          isStripe
+            ? {
+                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                phone: formData.phone,
+                email: formData.email,
+                wilaya: "",
+                commune: "",
+                deliveryType: "domicile",
+                address: `${formData.address}${formData.postalCode ? ", " + formData.postalCode : ""}`,
+                items: items,
+                total: total
+              }
+            : {
+                customerName: formData.fullName,
+                phone: formData.phone,
+                wilaya: wilaya?.name ?? "",
+                commune: formData.commune,
+                deliveryType: formData.deliveryType,
+                address: formData.deliveryType === "domicile" ? formData.address : "",
+                items: items,
+                total: total
+              }
+        )
+        window.fbq?.("track", "Purchase", { value: total, currency: "DZD" })
+        clearCart()
+        setIsProcessing(false)
+        setIsSuccess(true)
+      } catch {
+        setIsProcessing(false)
+      }
     }, 2000)
   }
 

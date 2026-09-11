@@ -237,6 +237,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
     if (error) {
       console.error("Error adding order:", error)
+      throw error
     } else {
       ordersCache = null
     }
