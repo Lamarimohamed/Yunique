@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "../context/CartContext"
 import { useData } from "../context/DataContext"
@@ -12,6 +12,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "cod">("cod")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const hasTrackedCheckout = useRef(false)
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -27,6 +28,8 @@ export default function Checkout() {
   })
 
   useEffect(() => {
+    if (hasTrackedCheckout.current) return
+    hasTrackedCheckout.current = true
     window.fbq?.("track", "InitiateCheckout")
   }, [])
 

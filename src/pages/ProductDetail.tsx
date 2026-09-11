@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { useCart } from "../context/CartContext"
 import { useData } from "../context/DataContext"
@@ -7,15 +7,17 @@ import { useParams, Link } from "react-router"
 export default function ProductDetail() {
   const { id } = useParams()
   const { products } = useData()
-  const product = products.find(p => p.id === id) || products[0] // Fallback for safety
+  const product = products.find(p => p.id === id)
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
   const { addToCart, openCart } = useCart()
+  const trackedProductId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!product) return
+    if (!product || trackedProductId.current === product.id) return
+    trackedProductId.current = product.id
     window.fbq?.("track", "ViewContent", {
       content_ids: [product.id],
       content_type: "product",
