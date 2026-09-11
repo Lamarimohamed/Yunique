@@ -7,6 +7,17 @@ import { Link } from "react-router"
 import { supabase } from "../../lib/supabase"
 
 const adminStatusCache = new Map<string, boolean>()
+const ORDER_NOTIFICATION_PREFERENCE_KEY = "yunique-admin-order-notifications-enabled"
+
+function getStoredNotificationPreference(permission: NotificationPermission | "unsupported"): boolean {
+  if (permission === "unsupported" || typeof window === "undefined") return false
+  try {
+    const storedPreference = window.localStorage.getItem(ORDER_NOTIFICATION_PREFERENCE_KEY)
+    return storedPreference === null ? permission === "granted" : storedPreference === "true"
+  } catch {
+    return permission === "granted"
+  }
+}
 
 async function isAdminUser(userId: string, appMetadataRole?: string): Promise<boolean> {
   if (appMetadataRole === "admin") return true
@@ -58,6 +69,10 @@ export default function AdminDashboard() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   )
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
+    getStoredNotificationPreference(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
+  )
+  const notificationsEnabledRef = useRef(notificationsEnabled)
   const knownOrderIds = useRef<Set<string> | null>(null)
 
   // Modal state
@@ -76,11 +91,15 @@ export default function AdminDashboard() {
   const notifyAboutOrder = (incomingOrder: Order) => {
     setOrderNotification(incomingOrder)
 
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification("New Yunique order", {
-        body: `${incomingOrder.customerName} placed order ${incomingOrder.id}.`,
+    if (notificationsEnabledRef.current && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      const browserNotification = new Notification("New Yunique order", {
+        body: `${incomingOrder.customerName} placed order ${incomingOrder.total.toLocaleString()} DZD.`,
         icon: "/favicon.jpg",
       })
+      browserNotification.onclick = () => {
+        window.focus()
+        browserNotification.close()
+      }
     }
 
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
@@ -143,15 +162,15 @@ export default function AdminDashboard() {
           const latestOrders = await loadOrders(true)
           if (cancelled || !knownOrderIds.current) return
 
-          let latestNewOrder: Order | null = null
+          const newOrders: Order[] = []
           for (let i = latestOrders.length - 1; i >= 0; i -= 1) {
             const order = latestOrders[i]
             if (knownOrderIds.current.has(order.id)) continue
             knownOrderIds.current.add(order.id)
-            latestNewOrder = order
+            newOrders.push(order)
           }
 
-          if (latestNewOrder) notifyAboutOrder(latestNewOrder)
+          newOrders.forEach(notifyAboutOrder)
         }
 
         pollingInterval = setInterval(() => {
@@ -210,10 +229,29 @@ export default function AdminDashboard() {
     document.title = defaultDocumentTitle.current
   }, [orderNotification])
 
+  const setNotificationPreference = (enabled: boolean) => {
+    notificationsEnabledRef.current = enabled
+    setNotificationsEnabled(enabled)
+    try {
+      window.localStorage.setItem(ORDER_NOTIFICATION_PREFERENCE_KEY, String(enabled))
+    } catch {
+      // Continue with the in-memory preference when storage is unavailable.
+    }
+  }
+
   const requestNotificationPermission = async () => {
     if (typeof Notification === "undefined") return
     const permission = await Notification.requestPermission()
     setNotificationPermission(permission)
+    if (permission === "granted") setNotificationPreference(true)
+  }
+
+  const toggleOrderNotifications = () => {
+    if (notificationPermission === "default") {
+      void requestNotificationPermission()
+      return
+    }
+    if (notificationPermission === "granted") setNotificationPreference(!notificationsEnabled)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -405,13 +443,28 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex flex-col items-start gap-3 sm:items-end">
-            {notificationPermission === "default" && (
+            {notificationPermission === "unsupported" && (
+              <p className="max-w-xs text-right text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                Browser notifications are not supported here.
+              </p>
+            )}
+            {notificationPermission === "denied" && (
+              <p className="max-w-xs text-right text-[10px] font-semibold uppercase tracking-widest text-red-600">
+                Notifications are blocked. Re-enable them in your browser settings.
+              </p>
+            )}
+            {notificationPermission !== "unsupported" && notificationPermission !== "denied" && (
               <button
                 type="button"
-                onClick={requestNotificationPermission}
-                className="text-[10px] font-semibold tracking-widest uppercase text-black underline underline-offset-4 hover:text-gray-500 sm:text-xs"
+                onClick={toggleOrderNotifications}
+                aria-pressed={notificationPermission === "granted" && notificationsEnabled}
+                className={`border px-4 py-2 text-[10px] font-semibold tracking-widest uppercase transition-colors sm:text-xs ${
+                  notificationPermission === "granted" && notificationsEnabled
+                    ? "border-black bg-black text-white hover:bg-gray-800"
+                    : "border-[#E5E5E5] bg-white text-black hover:border-black"
+                }`}
               >
-                Enable order notifications
+                {notificationPermission === "granted" && notificationsEnabled ? "Enabled ✅" : "Enable Notifications"}
               </button>
             )}
             <button
